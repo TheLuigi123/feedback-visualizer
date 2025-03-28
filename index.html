@@ -4,18 +4,27 @@
     <title>Feedback Dashboard</title>
     <style>
       /* CSS remains the same */
-      body { font-family: sans-serif; text-align: center; margin: 0; } /* Remove default body margin */
+      body {
+            font-family: sans-serif;
+            text-align: center;
+            margin: 0;
+            font-size: 2em; /* Double the font size */
+        } /* Remove default body margin */
       #date-controls { margin-bottom: 20px; }
       #date-display { font-size: 1.5em; margin: 0 10px; }
       .arrow { cursor: pointer; font-size: 1.5em; padding: 5px; }
       #group-counts {
         margin-top: 20px;
-        text-align: left;
+        text-align: center; /* Center the group counts */
         width: 100%; /* Make it full width */
         padding: 0 10px; /* Add padding to the left and right */
         box-sizing: border-box; /* Include padding in width calculation */
         min-height: 50px;
         vertical-align: top;
+        display: flex;  /* Use flexbox for centering */
+        flex-direction: column; /* Stack children vertically */
+        align-items: center; /* Center children horizontally */
+
       }
 
       #comments-display {
