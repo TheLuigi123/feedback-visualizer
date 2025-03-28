@@ -3,70 +3,79 @@
 <head>
     <title>Feedback Dashboard</title>
     <style>
-      /* CSS remains the same */
+      /* CSS */
       body {
             font-family: sans-serif;
             text-align: center;
             margin: 0;
             font-size: 2em; /* Double the font size */
-        } /* Remove default body margin */
-      #date-controls { margin-bottom: 20px; padding-top: 30px; padding-bottom: 15px;} /* Increased padding above */
-      #date-display { font-size: 1.5em; margin: 0 10px; }
-      .arrow { cursor: pointer; font-size: 1.5em; padding: 5px; }
+        }
+      #date-controls {
+          margin-bottom: 20px;
+          padding-top: 30px; /* Increased padding above */
+          padding-bottom: 15px; /* Padding below date */
+      }
+      #date-display {
+          font-size: 1.5em;
+          margin: 0 10px;
+       }
+      .arrow {
+          cursor: pointer;
+          font-size: 1.5em;
+          padding: 5px;
+       }
       #group-counts {
         margin-top: 20px;
-        text-align: left; /* Align the container content to the left */
-        width: 100%; /* Make it full width */
-        padding: 0 10px; /* Add padding to the left and right */
-        box-sizing: border-box; /* Include padding in width calculation */
+        text-align: left;
+        width: 100%;
+        padding: 0 10px;
+        box-sizing: border-box;
         min-height: 50px;
         vertical-align: top;
-        display: flex;  /* Use flexbox for centering */
-        flex-direction: column; /* Stack children vertically */
-       /* align-items: center; /* Remove this line to align content to the left */
-        align-items: stretch; /* Ensure items stretch to container width */
-
-
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
       }
 
       #comments-display {
         text-align: left;
         margin-top: 20px;
-        width: 100%; /* Make it full width */
-        padding: 0 10px; /* Add padding to the left and right */
-        box-sizing: border-box; /* Include padding in width calculation */
-        font-size: 1em; /* Explicitly set font size */
-
+        width: 100%;
+        padding: 0 10px;
+        box-sizing: border-box;
+        font-size: 0.5em; /* Adjusted: Relative to body (2em), this aims for 1x base font size */
       }
-      /*.group-count { margin-bottom: 10px; display: grid; grid-template-columns: 110px 300px auto; gap: 10px; align-items: center; }*/
       .group-count {
             margin-bottom: 10px;
-            display: flex; /* Use flexbox */
-            align-items: center; /* Vertically align items */
+            display: flex;
+            align-items: center;
         }
       .group-name {
             white-space: nowrap;
-            width: 120px; /* Fixed width for group name labels */
-            text-align: left; /* Align text to the left */
-            flex-shrink: 0;  /* Prevent shrinking */
-            margin-right: 10px; /* Add some space between label and bar chart */
-
+            width: 120px; /* Fixed width */
+            text-align: left; /* Original alignment */
+            flex-shrink: 0;
+            margin-right: 10px; /* Space between label and bar chart container */
         }
       .bar-chart {
             display: flex;
-            /*width: 300px; original width */
-            width: 100%; /* Make the bar chart fill available space */
+            width: 100%; /* Fill available space */
             height: 20px;
             border: 1px solid #eee;
-            overflow: hidden; /* Prevent bars from overflowing */
-            margin-left: 60px; /* Increased margin to push the bar chart further right */
+            overflow: hidden;
+            margin-left: 60px; /* Space to the left of the bar chart */
         }
 
       .bar { height: 100%; }
       .button-1 { background-color: green; }
       .button-2 { background-color: yellow; }
       .button-3 { background-color: red; }
-      .group-total { font-size: 0.9em; padding-left: 40px; } /* Padding between chart and number */
+      .group-total {
+          font-size: 0.9em;
+          padding-left: 40px; /* Increased padding between chart and number */
+          text-align: left; /* Keep text alignment left */
+          white-space: nowrap; /* Prevent wrapping */
+       }
     </style>
 </head>
 <body>
@@ -86,9 +95,8 @@
     <script async defer src="https://apis.google.com/js/api.js" onload="gisLoaded()"></script>
 
     <script>
-          // Make sure helper functions are defined
-
-         function formatDate(date) {
+        // --- Helper Functions ---
+        function formatDate(date) {
           const day = String(date.getDate()).padStart(2, '0');
           const month = String(date.getMonth() + 1).padStart(2, '0');
           const year = String(date.getFullYear()).slice(2);
@@ -99,18 +107,14 @@
           return weekdays[date.getDay()];
         }
 
-         function calculateGlobalMax(allData) {
-          const dailyGroupTotals = {}; // Structure: { 'DD/MM/YY': { 'GroupA': 10, 'GroupB': 5 }, ... }
+        function calculateGlobalMax(allData) {
+          const dailyGroupTotals = {};
           let maxFound = 0;
 
           if (allData && allData.length > 1) {
             for (let i = 1; i < allData.length; i++) {
               const row = allData[i];
-              // Ensure row has at least date (index 0) and group (index 1)
-              if (!row || row.length < 2 || !row[0] || !row[1]) {
-                // console.warn("Skipping incomplete row during max calculation:", row);
-                continue;
-              }
+              if (!row || row.length < 2 || !row[0] || !row[1]) continue;
 
               const timestamp = row[0];
               const group = row[1];
@@ -118,15 +122,9 @@
 
               if (typeof timestamp === 'string') {
                   datePart = timestamp.split(' ')[0];
-              } else {
-                   // console.warn("Skipping row with non-string timestamp during max calculation:", row);
-                  continue;
-              }
+              } else { continue; }
 
-               if (!/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(datePart)) {
-                   // console.warn("Skipping row with unexpected date format during max calculation:", row);
-                   continue;
-              }
+              if (!/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(datePart)) continue;
 
               if (!dailyGroupTotals[datePart]) dailyGroupTotals[datePart] = {};
               if (!dailyGroupTotals[datePart][group]) dailyGroupTotals[datePart][group] = 0;
@@ -142,334 +140,342 @@
           return maxFound;
         }
 
-
-       function updateStatus(message, isError = false) {
+        function updateStatus(message, isError = false) {
             console[isError ? 'error' : 'log']("Status:", message);
             const groupCountsContainer = document.getElementById('group-counts');
             const commentsContainer = document.getElementById('comments-display');
-            if (groupCountsContainer) groupCountsContainer.textContent = message;
-            if (commentsContainer) commentsContainer.textContent = message; // Changed to textContent
-            if (isError) {
-                document.getElementById('date-display').textContent = "Error"; // Keep date display accurate for errors as well
-            } else {
-                setDateDisplay(); // Force date update as part of normal status
+
+            if (groupCountsContainer) {
+                groupCountsContainer.textContent = message; // Use textContent for simple status in counts area
             }
-       }
+            if (commentsContainer) {
+                // Use innerHTML consistently for clearing/setting messages in comments area
+                commentsContainer.innerHTML = message;
+            }
+
+            if (isError) {
+                document.getElementById('date-display').textContent = "Error";
+            } else {
+                // Avoid setting date display during initial loading messages
+                 if (message !== "Initializing API client..." && message !== "Loading API modules..." && message !== "Fetching data to calculate scale...") {
+                     setDateDisplay();
+                 } else if (document.getElementById('date-display').textContent === "Loading...") {
+                    // Ensures date is set once initialization messages pass
+                     setDateDisplay();
+                 }
+            }
+        }
+
+
         function setDateDisplay() {
           try {
             const weekday = getWeekday(currentDate);
             const formattedDate = formatDate(currentDate);
             document.getElementById('date-display').textContent = `${weekday}, ${formattedDate}`;
-        } catch (error) {
+          } catch (error) {
             console.error("Error setting date display:", error);
             document.getElementById('date-display').textContent = "Date Error";
-        }
-        }
-      // --- Constants ---
-      const SPREADSHEET_ID = '1DIKTyqRujOEF6TbfhxF5UvZvu1O81o0gtF_5DANYbJQ';
-      const SHEET_NAME = 'Sheet1';
-      const API_KEY = 'AIzaSyDG2mNypu1h7Zl2eQhK2IFBDIBgLvYX1Pk';
-
-      console.log("Constants defined - API Key:", API_KEY.substring(0, 10)+"...", "Sheet ID:", SPREADSHEET_ID);
-
-      // Moved to top for early initialization
-      let currentDate = new Date();
-
-      setDateDisplay(); // Call it *immediately*
-
-      let globalMaxDailyGroupCount = 0;
-      let gapiInitialized = false;
-
-      const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-      const groupOrder = ["Besucher", "Lehrer", "9-12 Klasse", "5-8 Klasse", "1-4 Klasse"];
-      const buttonNumbers = [1, 2, 3];
-
-       // Load then init
-      // Step 2: Called by the GAPI script tag's 'onload' attribute.
-      function gisLoaded() {
-        console.log("GAPI script loaded (gisLoaded called). Loading 'client:auth2' modules...");
-        updateStatus("Loading API modules...");
-        // Load specific modules. Callback fires when *these modules* are ready.
-        gapi.load('client:auth2', initializeGapiClient);
-      }
-
-      // Step 3: Called after 'client:auth2' modules are loaded.
-      function initializeGapiClient() {
-          console.log("'client:auth2' modules loaded. Initializing GAPI client...");
-          updateStatus("Initializing API client...");
-
-          try { // Try the API client too
-            gapi.client.init({
-                apiKey: API_KEY,
-                discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
-                // Note: clientId and scope are not needed for API Key access to public sheets
-            }).then(() => {
-                console.log("gapi.client.init promise resolved successfully.");
-                // Explicitly check if the sheets object exists NOW
-                if (gapi.client.sheets && gapi.client.sheets.spreadsheets) {
-                     console.log("Sheets API client (gapi.client.sheets) is available.");
-                     gapiInitialized = true; // Set the flag *only* on success AND sheets obj exists
-                      updateStatus("Fetching data to calculate scale..."); // and update status
-                     fetchDataForScaleCalculation(); // Proceed to fetch data
-                } else {
-                     console.error("gapi.client.init succeeded BUT gapi.client.sheets is NOT available!");
-                     updateStatus("Error: Sheets API structure not found after init.", true);
-                     gapiInitialized = false;
-                }
-            }).catch(err => {
-                // Handle errors specifically from the gapi.client.init promise
-                console.error("Error during gapi.client.init promise:", err);
-                handleInitError(err);
-                gapiInitialized = false;
-            });
-            console.log("gapi.client.init call was issued (asynchronously).");
-          } catch (error) {
-            console.error("Error setting data after gapi load", error);
-            updateStatus("Date loading error")
           }
-      }
+        }
 
-         // Centralized Init Error Handler
-      function handleInitError(err) {
-           let errorMsg = err.result?.error?.message || err.message || 'Unknown init error';
-           if (err.result?.error?.status === 'PERMISSION_DENIED') { errorMsg += ". Check API Key restrictions or Sheet permissions."; }
-           else if (err.result?.error?.status === 'INVALID_ARGUMENT') { errorMsg += ". Check Spreadsheet ID or Sheet Name."; }
-           else { errorMsg += ". Check API Key, Spreadsheet ID, Discovery Doc URL, Network, & Sheet Permissions."; }
-           updateStatus(`Initialization Error: ${errorMsg}`, true);
-           document.getElementById("date-display").innerHTML = "Error"; // also update on error
-      }
+        // --- Constants ---
+        const SPREADSHEET_ID = '1DIKTyqRujOEF6TbfhxF5UvZvu1O81o0gtF_5DANYbJQ';
+        const SHEET_NAME = 'Sheet1';
+        const API_KEY = 'AIzaSyDG2mNypu1h7Zl2eQhK2IFBDIBgLvYX1Pk'; // Replace with your actual API key
 
-        // Fetch then check and update status if problems exist
-      function fetchDataForScaleCalculation() {
-                if (!gapiInitialized) {
-                   updateStatus("Error: Cannot fetch scale data, GAPI not initialized.", true);
-                   return;
-                }
+        console.log("Constants defined - API Key:", API_KEY.substring(0, 10)+"...", "Sheet ID:", SPREADSHEET_ID);
 
-                console.log("Fetching A:B range for scale calculation...");
-                try { // Add try..catch around API calls
-                gapi.client.sheets.spreadsheets.values.get({
-                    spreadsheetId: SPREADSHEET_ID,
-                    range: `${SHEET_NAME}!A:B`,
-                    dateTimeRenderOption: 'FORMATTED_STRING'
-                }).then(response => {
-                     console.log("Successfully fetched A:B data.");
-                     const allData = response.result.values;
-                     globalMaxDailyGroupCount = calculateGlobalMax(allData);
+        // --- State Variables ---
+        let currentDate = new Date();
+        let globalMaxDailyGroupCount = 0;
+        let gapiInitialized = false;
+        const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        const groupOrder = ["Besucher", "Lehrer", "9-12 Klasse", "5-8 Klasse", "1-4 Klasse"];
+        const buttonNumbers = [1, 2, 3];
 
-                     if (globalMaxDailyGroupCount === 0) {
-                         console.warn("No data found or max count is zero.");
-                         updateStatus("No feedback data found in the sheet.");
-                         setDateDisplay(); // Still show date
-                     } else {
-                         console.log("Scale calculated. Displaying initial data.");
-                         setDateDisplay();
-                         displayGroupCounts(); // Display data for the current date
-                     }
-                }).catch(err => { // Catch errors from the .get() promise
-                    console.error("Error fetching A:B data:", err);
-                    updateStatus(`Error fetching scale data: ${err.result?.error?.message || err.message}`, true);
-                    setDateDisplay(); // Make sure Date is shown, even on errors
+        // --- Initialization Flow ---
+
+        // Step 2: Called by GAPI script tag's 'onload'. Loads specific client modules.
+        function gisLoaded() {
+            console.log("GAPI script loaded (gisLoaded called). Loading 'client:auth2' modules...");
+            updateStatus("Loading API modules...");
+            gapi.load('client:auth2', initializeGapiClient);
+        }
+
+        // Step 3: Called after 'client:auth2' modules are loaded. Initializes the API client.
+        function initializeGapiClient() {
+            console.log("'client:auth2' modules loaded. Initializing GAPI client...");
+            updateStatus("Initializing API client...");
+
+            try {
+                gapi.client.init({
+                    apiKey: API_KEY,
+                    discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'],
+                }).then(() => {
+                    console.log("gapi.client.init promise resolved successfully.");
+                    if (gapi.client.sheets && gapi.client.sheets.spreadsheets) {
+                        console.log("Sheets API client (gapi.client.sheets) is available.");
+                        gapiInitialized = true;
+                        updateStatus("Fetching data to calculate scale...");
+                        fetchDataForScaleCalculation(); // Proceed to fetch data
+                    } else {
+                        console.error("gapi.client.init succeeded BUT gapi.client.sheets is NOT available!");
+                        updateStatus("Error: Sheets API structure not found after init.", true);
+                        gapiInitialized = false;
+                    }
+                }).catch(err => {
+                    console.error("Error during gapi.client.init promise:", err);
+                    handleInitError(err);
+                    gapiInitialized = false;
                 });
-              } catch (error) { // Catch synchronous errors calling sheets.spreadsheets.values.get for scale:", error);
-                  console.error("Synchronous error calling sheets.spreadsheets.values.get for scale:", error);
-                  updateStatus(`Critical Error fetching scale data: ${error.message}`, true);
-                  setDateDisplay(); // Show Date even if there are errors
+                console.log("gapi.client.init call was issued (asynchronously).");
+            } catch (error) {
+                console.error("Synchronous error during gapi.client.init setup:", error);
+                updateStatus("Critical initialization error: " + error.message, true);
+                gapiInitialized = false;
+                document.getElementById("date-display").textContent = "Init Error";
+            }
+        }
 
-               }
+        // Centralized Init Error Handler
+        function handleInitError(err) {
+            let errorMsg = err.result?.error?.message || err.message || 'Unknown init error';
+            if (err.result?.error?.status === 'PERMISSION_DENIED') { errorMsg += ". Check API Key restrictions or Sheet permissions."; }
+            else if (err.result?.error?.status === 'INVALID_ARGUMENT') { errorMsg += ". Check Spreadsheet ID or Sheet Name."; }
+            else { errorMsg += ". Check API Key, Spreadsheet ID, Discovery Doc URL, Network, & Sheet Permissions."; }
+            updateStatus(`Initialization Error: ${errorMsg}`, true);
+            // No need to set date-display here, updateStatus handles errors
+        }
+
+        // Step 4: Fetches initial data needed to set the scale for bar charts.
+        function fetchDataForScaleCalculation() {
+            if (!gapiInitialized) {
+                updateStatus("Error: Cannot fetch scale data, GAPI not initialized.", true);
+                return;
             }
 
-       function displayGroupCounts() { // Show counts even in error!
+            console.log("Fetching A:B range for scale calculation...");
+            try {
+                gapi.client.sheets.spreadsheets.values.get({
+                    spreadsheetId: SPREADSHEET_ID,
+                    range: `${SHEET_NAME}!A:B`, // Only need timestamp and group
+                    dateTimeRenderOption: 'FORMATTED_STRING' // Ensure date is string like "DD/MM/YY HH:MM:SS"
+                }).then(response => {
+                    console.log("Successfully fetched A:B data.");
+                    const allData = response.result.values;
+                    globalMaxDailyGroupCount = calculateGlobalMax(allData);
 
-                    //check to see is a number
-try {
-if (!gapiInitialized) {
-      updateStatus("Error: Cannot display counts, GAPI not initialized.", true);
-      return;
-       }
+                    if (globalMaxDailyGroupCount === 0) {
+                        console.warn("No data found or max count is zero after scale calculation.");
+                        updateStatus("No feedback data found in the sheet.");
+                        // setDateDisplay(); // updateStatus handles date display
+                    } else {
+                        console.log("Scale calculated. Displaying initial data for today.");
+                        // setDateDisplay(); // updateStatus handles date display
+                        displayGroupCounts(); // Display data for the current date
+                    }
+                }).catch(err => {
+                    console.error("Error fetching A:B data:", err);
+                    updateStatus(`Error fetching scale data: ${err.result?.error?.message || err.message}`, true);
+                    // setDateDisplay(); // updateStatus handles date display on error
+                });
+            } catch (error) {
+                console.error("Synchronous error calling sheets.spreadsheets.values.get for scale:", error);
+                updateStatus(`Critical Error fetching scale data: ${error.message}`, true);
+                // setDateDisplay(); // updateStatus handles date display on error
+            }
+        }
 
-       if (globalMaxDailyGroupCount <= 0) {
-           // This might happen if initial fetch failed or sheet was empty
-           if (!document.getElementById('group-counts').textContent.includes("Error") && !document.getElementById('group-counts').textContent.includes("No feedback data")) {
-              updateStatus("Scale calculation pending or failed.");
-           }
-           console.warn("Cannot display: Global max count is zero or not calculated.");
-            return; // prevent further execution
-       }
+        // Step 5: Fetches and displays data for the currently selected date.
+        function displayGroupCounts() {
+            try {
+                if (!gapiInitialized) {
+                    updateStatus("Error: Cannot display counts, GAPI not initialized.", true);
+                    return;
+                }
 
-                 const formattedDate = formatDate(currentDate);
-                 const range = `${SHEET_NAME}!A:E`;
-                 const groupCountsContainer = document.getElementById('group-counts');
-                 const commentsContainer = document.getElementById('comments-display');
+                if (globalMaxDailyGroupCount <= 0) {
+                    if (!document.getElementById('group-counts').textContent.includes("Error") && !document.getElementById('group-counts').textContent.includes("No feedback data")) {
+                       updateStatus("Scale calculation pending or failed.");
+                    }
+                    console.warn("Cannot display: Global max count is zero or not calculated.");
+                    // Ensure comments are also cleared/updated
+                    const commentsContainer = document.getElementById('comments-display');
+                     if(commentsContainer) commentsContainer.innerHTML = ""; // Clear comments if scale is bad
+                    return; // Prevent further execution
+                }
 
-                 groupCountsContainer.innerHTML = "Loading day data...";
-                 commentsContainer.innerHTML = "";
+                const formattedDate = formatDate(currentDate);
+                const range = `${SHEET_NAME}!A:E`; // Fetch timestamp, group, button, (unused), comment
+                const groupCountsContainer = document.getElementById('group-counts');
+                const commentsContainer = document.getElementById('comments-display');
 
-                console.log(`Fetching A:D range for date: ${formattedDate}...`);
+                groupCountsContainer.innerHTML = "Loading day data..."; // Clear previous content
+                commentsContainer.innerHTML = ""; // Clear previous comments immediately
 
-             // Make the call for gapi
-                    gapi.client.sheets.spreadsheets.values.get({
-                        spreadsheetId: SPREADSHEET_ID,
-                       range: range,
-                    }).then(response => {
-                                 console.log(`Successfully fetched A:D data for ${formattedDate}.`);
-                                 groupCountsContainer.innerHTML = "";
+                console.log(`Fetching A:E range for date: ${formattedDate}...`);
 
-                              const data = response.result.values;
+                gapi.client.sheets.spreadsheets.values.get({
+                    spreadsheetId: SPREADSHEET_ID,
+                    range: range,
+                    dateTimeRenderOption: 'FORMATTED_STRING' // Consistent date format
+                }).then(response => {
+                    console.log(`Successfully fetched A:E data for ${formattedDate}.`);
+                    groupCountsContainer.innerHTML = ""; // Clear loading message
 
-                              // Process and show
-                              const groupButtonCounts = {};
-                              const groupTotals = {};
-                              const groupComments = {};
+                    const data = response.result.values;
+                    const groupButtonCounts = {};
+                    const groupTotals = {};
+                    const groupComments = {};
+                    let foundDataForDate = false; // Track if any relevant data exists for the date
 
-                               if (data && data.length > 1) {
-                                        for (let i = 1; i < data.length; i++) {
-                                            const row = data[i];
-                                            if (!row || row.length < 3) continue;
-                                            const timestamp = row[0];
-                                            const group = row[1];
-                                            const button = parseInt(row[2]);
-                                             //Here we are getting the comment to change the columns
-                                          const comment = (row.length > 4 && row[4]) ? String(row[4]).trim() : null;
-                                          if (timestamp && typeof timestamp === 'string' && timestamp.startsWith(formattedDate) && group && !isNaN(button) && buttonNumbers.includes(button)) {
-                                                 if (!groupButtonCounts[group]) groupButtonCounts[group] = {};
-                                                      groupButtonCounts[group][button] = (groupButtonCounts[group][button] || 0) + 1;
-                                                      groupTotals[group] = (groupTotals[group] || 0) + 1;
+                    if (data && data.length > 1) {
+                        for (let i = 1; i < data.length; i++) {
+                            const row = data[i];
+                            // Need at least Timestamp, Group, Button
+                            if (!row || row.length < 3) continue;
 
-                                                          if (comment && comment.length > 0) {
-                                                                    if (!groupComments[group]) groupComments[group] = [];
-                                                                      groupComments[group].push(comment);
-                                                         }
-                                                }
-                                              }
+                            const timestamp = row[0];
+                            const group = row[1];
+                            const button = parseInt(row[2]);
+                            // Comment is in the 5th column (index 4)
+                            const comment = (row.length > 4 && row[4]) ? String(row[4]).trim() : null;
 
-                                   //Show the chart
-                                  let foundDataForDate=false;
-                                   groupOrder.forEach(group => {
-                                         const totalCountForDay=groupTotals[group]||0;
-                                         if(totalCountForDay>0){
-                                               foundDataForDate=true;
-                                               const groupCountDiv=document.createElement('div');
+                            // Validate data for the current date
+                            if (timestamp && typeof timestamp === 'string' && timestamp.startsWith(formattedDate) && group && !isNaN(button) && buttonNumbers.includes(button)) {
+                                foundDataForDate = true; // Found at least one valid entry for this date
 
-                                               groupCountDiv.className='group-count';
-                                                   const groupNameSpan=document.createElement('span');
-                                                  groupNameSpan.className='group-name';
-                                                  groupNameSpan.textContent=`${group}:`;
-                                                  groupCountDiv.appendChild(groupNameSpan);
-                                                 const barChartDiv=document.createElement('div');
-                                                 barChartDiv.className='bar-chart';
-                                                 buttonNumbers.forEach(button => {
-                                                  const buttonCountForDay=groupButtonCounts[group]?.[button]||0;
+                                // Aggregate counts
+                                if (!groupButtonCounts[group]) groupButtonCounts[group] = {};
+                                groupButtonCounts[group][button] = (groupButtonCounts[group][button] || 0) + 1;
+                                groupTotals[group] = (groupTotals[group] || 0) + 1;
 
-                                                   const percentage=globalMaxDailyGroupCount>0?(buttonCountForDay/globalMaxDailyGroupCount)*100:0;
-                                                  if(percentage>0){
-                                                       const barDiv=document.createElement('div');
-                                                     barDiv.className=`bar button-${button}`;
+                                // Aggregate comments
+                                if (comment && comment.length > 0) {
+                                    if (!groupComments[group]) groupComments[group] = [];
+                                    groupComments[group].push(comment);
+                                }
+                            }
+                        }
+                    }
 
-                                                     barDiv.style.width=`${percentage}%`;
+                    // --- Render Group Counts and Bars ---
+                    if (foundDataForDate) {
+                        groupOrder.forEach(group => {
+                            const totalCountForDay = groupTotals[group] || 0;
+                            // Only display groups that have data for the day
+                            if (totalCountForDay > 0) {
+                                const groupCountDiv = document.createElement('div');
+                                groupCountDiv.className = 'group-count';
 
-                                                     barChartDiv.appendChild(barDiv);
+                                const groupNameSpan = document.createElement('span');
+                                groupNameSpan.className = 'group-name';
+                                groupNameSpan.textContent = `${group}:`;
+                                groupCountDiv.appendChild(groupNameSpan);
 
-                                                   }
+                                const barChartDiv = document.createElement('div');
+                                barChartDiv.className = 'bar-chart';
 
-                                                    });
-                                                    groupCountDiv.appendChild(barChartDiv);
-
-                                                    const totalCountSpan=document.createElement('span');
-                                                   totalCountSpan.className='group-total';
-                                                  totalCountSpan.textContent=`(${totalCountForDay})`;
-
-                                                  groupCountDiv.appendChild(totalCountSpan);
-
-                                                  groupCountsContainer.appendChild(groupCountDiv);
-
-                                                  }
-
-                                               });
-
-                                             if(!foundDataForDate){
-
-                                                 groupCountsContainer.textContent="No data found for this date.";
-
-                                                 commentsContainer.innerHTML="";
-                                             }
-                                       commentsContainer.innerHTML="";
-                                       let commentsFoundForAnyGroup=false;
-                                        groupOrder.forEach(group => {
-
-                                             const commentsForGroup=groupComments[group];
-
-                                             if(commentsForGroup&&commentsForGroup.length>0){
-
-                                                  commentsFoundForAnyGroup=true;
-
-                                                   const commentBlock=document.createElement('div');
-                                                    commentBlock.style.fontSize = '1em'; /* Keep size consistent */
-
-                                                   commentBlock.style.marginBottom='10px';
-                                                 const nameLabel=document.createElement('strong');
-                                                   nameLabel.textContent=`${group}: `;
-
-                                                  commentBlock.appendChild(nameLabel);
-
-                                                 commentBlock.appendChild(document.createTextNode(commentsForGroup.join(' | ')));
-
-                                                 commentsContainer.appendChild(commentBlock);
-                                                }
-                                        });
-
-                                          if(!commentsFoundForAnyGroup && foundDataForDate){
-                                                   commentsContainer.textContent="No comments for this date.";
-                                           } else if(!foundDataForDate){
-
-                                                 commentsContainer.innerHTML="";
-                                           }
-
-                                    } else {
-                                               groupCountsContainer.textContent="No data returned from sheet for analysis.";
-
-                                         commentsContainer.innerHTML="";
-
+                                buttonNumbers.forEach(button => {
+                                    const buttonCountForDay = groupButtonCounts[group]?.[button] || 0;
+                                    // Use globalMaxDailyGroupCount for consistent scaling across days
+                                    const percentage = globalMaxDailyGroupCount > 0 ? (buttonCountForDay / globalMaxDailyGroupCount) * 100 : 0;
+                                    if (percentage > 0) {
+                                        const barDiv = document.createElement('div');
+                                        barDiv.className = `bar button-${button}`;
+                                        barDiv.style.width = `${percentage}%`;
+                                        // Optional: Add title for hover
+                                        barDiv.title = `${buttonCountForDay}`;
+                                        barChartDiv.appendChild(barDiv);
                                     }
+                                });
+                                groupCountDiv.appendChild(barChartDiv);
 
-                        }).catch(err => {
+                                const totalCountSpan = document.createElement('span');
+                                totalCountSpan.className = 'group-total';
+                                totalCountSpan.textContent = `(${totalCountForDay})`;
+                                groupCountDiv.appendChild(totalCountSpan);
 
-                           console.error(`Error display data for ${formattedDate}:`, err);
+                                groupCountsContainer.appendChild(groupCountDiv);
+                            }
+                        });
+                    } else {
+                        // No data found specifically for this date
+                        groupCountsContainer.textContent = "No data found for this date.";
+                        commentsContainer.innerHTML = ""; // Ensure comments are empty too
+                    }
 
-                         updateStatus(`Error display data: ${err.result?.error?.message || err.message || 'An unknown error occurred'}.`, true); // change to error
-                      });
-                      } catch (ierr) {
-                       console.error(`Code logic errors display data, ${formattedDate}:`, ierr);
-                        document.getElementById("comments-display").innerHTML = `Error displaying comments! code problem`; // show error
-              }
 
-         }
+                    // --- Render Comments ---
+                    // This section runs regardless of foundDataForDate for counts,
+                    // but relies on groupComments being populated correctly.
+                    commentsContainer.innerHTML = ""; // Clear again before adding comments
+                    let commentsFoundForAnyGroup = false;
+                    groupOrder.forEach(group => {
+                        const commentsForGroup = groupComments[group];
+                        if (commentsForGroup && commentsForGroup.length > 0) {
+                            commentsFoundForAnyGroup = true;
+                            const commentBlock = document.createElement('div');
+                            // No inline font-size needed, rely on CSS: #comments-display { font-size: 0.5em; }
+                            commentBlock.style.marginBottom = '10px';
 
-      // Step 6: Navigate dates and refresh display
-      function changeDate(delta) {
-          currentDate.setDate(currentDate.getDate() + delta);
-          setDateDisplay();
-          const commentsContainer = document.getElementById('comments-display');
-          if (commentsContainer) commentsContainer.innerHTML = ""; // Clear comments
+                            const nameLabel = document.createElement('strong');
+                            nameLabel.textContent = `${group}: `;
+                            commentBlock.appendChild(nameLabel);
 
-          if (gapiInitialized && globalMaxDailyGroupCount > 0) {
-              displayGroupCounts(); // Fetch and display new data
-          } else if (!gapiInitialized) {
-             updateStatus("Cannot change date: GAPI not initialized.", true);
-          } else {
-             // Handles case where init worked but scale calc failed or returned 0
-             updateStatus("Cannot display data (initialization may have failed or no data found).");
-          }
-      }
+                            commentBlock.appendChild(document.createTextNode(commentsForGroup.join(' | ')));
+                            commentsContainer.appendChild(commentBlock);
+                        }
+                    });
 
-      // --- Init
+                    // Display "No comments" message only if there WAS data but no comments
+                    if (!commentsFoundForAnyGroup && foundDataForDate) {
+                        commentsContainer.textContent = "No comments for this date.";
+                    }
+                    // If !foundDataForDate, commentsContainer should already be empty.
 
-      // Load client, then do gapi load, that's how sheets work!
-       function loadFirst() {
-           gisLoaded();
-       }
-        // --- Call load
-       loadFirst();
+                }).catch(err => {
+                    console.error(`Error fetching or displaying data for ${formattedDate}:`, err);
+                    updateStatus(`Error displaying data: ${err.result?.error?.message || err.message || 'An unknown error occurred'}.`, true);
+                });
+            } catch (ierr) {
+                console.error(`Critical code logic error in displayGroupCounts for ${formatDate(currentDate)}:`, ierr);
+                updateStatus(`Code error displaying data: ${ierr.message}`, true);
+                 const commentsContainer = document.getElementById('comments-display');
+                 if(commentsContainer) commentsContainer.innerHTML = `Error displaying comments! (Code Problem)`;
+            }
+        }
+
+        // Step 6: Navigate dates and refresh display.
+        function changeDate(delta) {
+            currentDate.setDate(currentDate.getDate() + delta);
+            setDateDisplay(); // Update the displayed date immediately
+
+            // Clear previous results visually while new data loads
+            const groupCountsContainer = document.getElementById('group-counts');
+            const commentsContainer = document.getElementById('comments-display');
+            if (groupCountsContainer) groupCountsContainer.innerHTML = "Loading day data...";
+            if (commentsContainer) commentsContainer.innerHTML = ""; // Clear comments
+
+            // Fetch and display new data if initialized and scale is valid
+            if (gapiInitialized && globalMaxDailyGroupCount > 0) {
+                displayGroupCounts();
+            } else if (!gapiInitialized) {
+                updateStatus("Cannot change date: GAPI not initialized.", true);
+            } else {
+                // Handles case where init worked but scale calc failed or returned 0
+                updateStatus("Cannot display data (initialization may have failed or no data found).");
+                 if (commentsContainer) commentsContainer.innerHTML = ""; // Ensure comments clear here too
+            }
+        }
+
+        // --- Initial Load Trigger ---
+        // Set initial date display immediately on script parse
+        setDateDisplay();
+        // Start the GAPI loading process (will call gisLoaded on completion)
+        // The GAPI script tag already does this via `onload="gisLoaded()"`
+
+
     </script>
 </body>
 </html>
