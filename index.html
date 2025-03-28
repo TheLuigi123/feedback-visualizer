@@ -35,6 +35,8 @@
         width: 100%; /* Make it full width */
         padding: 0 10px; /* Add padding to the left and right */
         box-sizing: border-box; /* Include padding in width calculation */
+        font-size: 1em; /* Explicitly set font size */
+
       }
       /*.group-count { margin-bottom: 10px; display: grid; grid-template-columns: 110px 300px auto; gap: 10px; align-items: center; }*/
       .group-count {
@@ -146,7 +148,7 @@
             const groupCountsContainer = document.getElementById('group-counts');
             const commentsContainer = document.getElementById('comments-display');
             if (groupCountsContainer) groupCountsContainer.textContent = message;
-            if (commentsContainer) commentsContainer.innerHTML = ""; // Clear comments on status update/error
+            if (commentsContainer) commentsContainer.textContent = message; // Changed to textContent
             if (isError) {
                 document.getElementById('date-display').textContent = "Error"; // Keep date display accurate for errors as well
             } else {
@@ -402,6 +404,7 @@ if (!gapiInitialized) {
                                                   commentsFoundForAnyGroup=true;
 
                                                    const commentBlock=document.createElement('div');
+                                                    commentBlock.style.fontSize = '1em'; /* Keep size consistent */
 
                                                    commentBlock.style.marginBottom='10px';
                                                  const nameLabel=document.createElement('strong');
