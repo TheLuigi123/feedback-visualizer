@@ -3,7 +3,7 @@
 <head>
     <title>Feedback Dashboard</title>
     <style>
-      /* CSS - Includes layout and font size fixes */
+      /* CSS - Includes latest layout and font size adjustments */
       body {
             font-family: sans-serif;
             text-align: center;
@@ -36,7 +36,7 @@
         width: 100%;
         padding: 0 10px;
         box-sizing: border-box;
-        font-size: 2em; /* Explicitly set font size to match body/group names */
+        font-size: 1.5em; /* Adjusted font size for comments */
       }
 
       .group-count {
@@ -47,9 +47,9 @@
       .group-name {
             white-space: nowrap;
             width: 120px; /* Fixed width for group name labels */
-            text-align: right; /* Align text to the right */
+            text-align: left; /* Align text to the left */
             flex-shrink: 0;  /* Prevent shrinking */
-            margin-right: 20px; /* Increased space between label and bar chart */
+            margin-right: 60px; /* Increased space between label and bar chart */
         }
       .bar-chart {
             display: flex;
@@ -66,8 +66,7 @@
 
       .group-total {
         font-size: 0.9em;
-        /* padding-left: 5px; Removed padding */
-        margin-left: 20px; /* Added margin for space between bar and total */
+        margin-left: 20px; /* Space between bar and total */
         white-space: nowrap; /* Prevent wrapping */
         }
     </style>
@@ -118,7 +117,6 @@
               let datePart = '';
 
               if (typeof timestamp === 'string') {
-                  // Handle potential extra spaces if needed, though FORMATTED_STRING usually behaves
                   datePart = timestamp.split(' ')[0];
               } else {
                   continue;
@@ -134,16 +132,12 @@
 
               dailyGroupTotals[datePart][group]++;
 
-              // Update max *within the loop* for efficiency
               if (dailyGroupTotals[datePart][group] > maxFound) {
                 maxFound = dailyGroupTotals[datePart][group];
               }
             }
           }
           console.log("Global Max Daily Group Count Calculated:", maxFound);
-          // Return at least 1 to prevent division by zero if sheet is empty,
-          // though it might result in tiny bars if there's only 1 entry ever.
-          // Consider if 0 is better if no data truly exists. Let's stick with maxFound for now.
           return maxFound;
         }
 
@@ -159,11 +153,8 @@
 
             if (isError) {
                 if(dateDisplay) dateDisplay.textContent = "Error";
-            } else {
-                 // Only set date display if not an error message,
-                 // relies on setDateDisplay being called elsewhere for normal flow
-                 // setDateDisplay(); // Avoid calling it here redundantly if called elsewhere
             }
+            // setDateDisplay(); // Avoid calling it here redundantly
        }
         function setDateDisplay() {
           try {
@@ -251,7 +242,6 @@
            else { errorMsg += ". Check API Key, Spreadsheet ID, Discovery Doc URL, Network, & Sheet Permissions."; }
            console.error("Initialization Error Details:", err); // Log full error object
            updateStatus(`Initialization Error: ${errorMsg}`, true);
-           // setDateDisplay(); // Date display is handled by updateStatus in error case now
       }
 
       // Step 5: Fetch data for scale calculation
@@ -273,44 +263,35 @@
                      const allData = response.result.values;
                      globalMaxDailyGroupCount = calculateGlobalMax(allData);
 
-                     if (globalMaxDailyGroupCount <= 0) { // Check for <= 0
+                     if (globalMaxDailyGroupCount <= 0) {
                          console.warn("No data found or max count is zero after scale calculation.");
                          updateStatus("No feedback data found in the sheet.");
-                         // Still display counts (which will show "No data") for the current date
                          setDateDisplay();
                          displayGroupCounts(); // Call display even if no data, it handles the message
                      } else {
                          console.log("Scale calculated. Displaying initial data.");
-                         setDateDisplay(); // Set date before showing counts
-                         displayGroupCounts(); // Display data for the current date
+                         setDateDisplay();
+                         displayGroupCounts();
                      }
                 }).catch(err => {
                     console.error("Error fetching A:B data:", err);
                     let errorMsg = err.result?.error?.message || err.message || 'Unknown fetch error';
                     updateStatus(`Error fetching scale data: ${errorMsg}`, true);
-                    // setDateDisplay(); // Date display handled by updateStatus
                 });
               } catch (error) {
                   console.error("Synchronous error calling sheets.spreadsheets.values.get for scale:", error);
                   updateStatus(`Critical Error fetching scale data: ${error.message}`, true);
-                  // setDateDisplay(); // Date display handled by updateStatus
                }
             }
 
        // Step 6: Display data for the selected date
        function displayGroupCounts() {
             if (!gapiInitialized) {
-                // Don't overwrite a more specific init error message
                 if (!document.getElementById('group-counts')?.textContent?.includes("Error")) {
                    updateStatus("Error: Cannot display counts, GAPI not initialized.", true);
                 }
                 return;
             }
-
-           // We proceed even if globalMaxDailyGroupCount is 0, to show "No data" message if needed.
-           // However, if it's 0, bars won't render correctly (division by zero).
-           // The calculateGlobalMax should ideally return at least 1 if any data exists,
-           // or we handle the 0 case explicitly in bar width calculation.
 
             const formattedDate = formatDate(currentDate);
             // Fetch columns A (Timestamp), B (Group), C (Button), E (Comment)
@@ -357,7 +338,6 @@
                             // Comment is in Column E (index 4)
                             const comment = (row.length > 4 && row[4]) ? String(row[4]).trim() : null;
 
-                            // Check date part of timestamp, group validity, and button validity
                             if (timestamp && typeof timestamp === 'string' && timestamp.startsWith(formattedDate) && group && groupOrder.includes(group) && !isNaN(button) && buttonNumbers.includes(button)) {
                                 foundDataForDate = true; // Mark data found for this specific date
 
@@ -375,67 +355,57 @@
                         }
                     } else {
                         console.log("No data rows returned from the sheet.");
-                        // This case is handled below by !foundDataForDate
                     }
 
                     // --- Render Group Counts and Bars ---
-                    let chartsRendered = false;
                     groupOrder.forEach(group => {
                         const totalCountForDay = groupTotals[group] || 0;
 
-                        // Only render if there's data *for this group* on this day
-                        // if (totalCountForDay > 0) { // Original logic: only show groups with data
-                        // Always render the group name now, show 0 if no data for that group
-                           chartsRendered = true; // Mark that we are attempting to render charts
-                           const groupCountDiv = document.createElement('div');
-                           groupCountDiv.className = 'group-count';
+                        const groupCountDiv = document.createElement('div');
+                        groupCountDiv.className = 'group-count';
 
-                           const groupNameSpan = document.createElement('span');
-                           groupNameSpan.className = 'group-name';
-                           groupNameSpan.textContent = `${group}:`;
-                           groupCountDiv.appendChild(groupNameSpan);
+                        const groupNameSpan = document.createElement('span');
+                        groupNameSpan.className = 'group-name';
+                        groupNameSpan.textContent = `${group}:`;
+                        groupCountDiv.appendChild(groupNameSpan);
 
-                           const barChartDiv = document.createElement('div');
-                           barChartDiv.className = 'bar-chart';
+                        const barChartDiv = document.createElement('div');
+                        barChartDiv.className = 'bar-chart';
 
-                           if (totalCountForDay > 0 && globalMaxDailyGroupCount > 0) { // Only calculate/add bars if valid counts exist
-                                buttonNumbers.forEach(button => {
-                                    const buttonCountForDay = groupButtonCounts[group]?.[button] || 0;
-                                    // Calculate percentage based on GLOBAL max, handle division by zero
-                                    const percentage = (buttonCountForDay / globalMaxDailyGroupCount) * 100;
+                        if (totalCountForDay > 0 && globalMaxDailyGroupCount > 0) {
+                            buttonNumbers.forEach(button => {
+                                const buttonCountForDay = groupButtonCounts[group]?.[button] || 0;
+                                const percentage = (buttonCountForDay / globalMaxDailyGroupCount) * 100;
 
-                                    if (percentage > 0) {
-                                        const barDiv = document.createElement('div');
-                                        barDiv.className = `bar button-${button}`;
-                                        barDiv.style.width = `${percentage}%`;
-                                        // Optional: Add title for hover info
-                                        barDiv.title = `Button ${button}: ${buttonCountForDay}`;
-                                        barChartDiv.appendChild(barDiv);
-                                    }
-                                });
-                           } else {
-                                // Optionally add a placeholder or leave empty if total is 0 or global max is 0
-                                // barChartDiv.textContent = "N/A"; // Example placeholder
-                           }
-                           groupCountDiv.appendChild(barChartDiv);
+                                if (percentage > 0) {
+                                    const barDiv = document.createElement('div');
+                                    barDiv.className = `bar button-${button}`;
+                                    barDiv.style.width = `${percentage}%`;
+                                    barDiv.title = `Button ${button}: ${buttonCountForDay}`;
+                                    barChartDiv.appendChild(barDiv);
+                                }
+                            });
+                        }
+                        groupCountDiv.appendChild(barChartDiv);
 
-                           const totalCountSpan = document.createElement('span');
-                           totalCountSpan.className = 'group-total';
-                           totalCountSpan.textContent = `(${totalCountForDay})`;
-                           groupCountDiv.appendChild(totalCountSpan);
+                        const totalCountSpan = document.createElement('span');
+                        totalCountSpan.className = 'group-total';
+                        totalCountSpan.textContent = `(${totalCountForDay})`;
+                        groupCountDiv.appendChild(totalCountSpan);
 
-                           groupCountsContainer.appendChild(groupCountDiv);
-                        // } // End of original if (totalCountForDay > 0)
+                        groupCountsContainer.appendChild(groupCountDiv);
                     });
 
-                    // If loop completed but no charts were rendered (e.g., sheet exists but no data for *any* group on this date)
-                    if (!foundDataForDate) { // Check the specific flag for the date
+                    if (!foundDataForDate) {
+                         // If NO data was found for this specific date for ANY group,
+                         // clear the container and show the message.
+                         // This check needs to happen AFTER attempting to render all groups.
                         groupCountsContainer.textContent = "No data found for this date.";
                         commentsContainer.innerHTML = ""; // Ensure comments are cleared too
                     }
 
                     // --- Render Comments ---
-                    commentsContainer.innerHTML = ""; // Clear again just in case
+                    commentsContainer.innerHTML = ""; // Clear before rendering
                     let commentsFoundForAnyGroup = false;
                     if (foundDataForDate) { // Only show comments section if data existed for the date
                         groupOrder.forEach(group => {
@@ -443,13 +413,12 @@
                             if (commentsForGroup && commentsForGroup.length > 0) {
                                 commentsFoundForAnyGroup = true;
                                 const commentBlock = document.createElement('div');
-                                commentBlock.style.marginBottom = '15px'; // Add some space between comment blocks
+                                commentBlock.style.marginBottom = '15px';
 
                                 const nameLabel = document.createElement('strong');
                                 nameLabel.textContent = `${group}: `;
                                 commentBlock.appendChild(nameLabel);
 
-                                // Append the actual comment text
                                 commentBlock.appendChild(document.createTextNode(commentsForGroup.join(' | ')));
                                 commentsContainer.appendChild(commentBlock);
                             }
@@ -464,12 +433,10 @@
                     console.error(`Error fetching or processing data for ${formattedDate}:`, err);
                     let errorMsg = err.result?.error?.message || err.message || 'Unknown error during data display';
                     updateStatus(`Error displaying data: ${errorMsg}`, true);
-                    // setDateDisplay(); // Handled by updateStatus
                 });
             } catch (error) {
                 console.error(`Synchronous error in displayGroupCounts for ${formattedDate}:`, error);
                 updateStatus(`Code error displaying data: ${error.message}`, true);
-                // setDateDisplay(); // Handled by updateStatus
             }
        }
 
@@ -486,36 +453,32 @@
           if (commentsContainer) commentsContainer.innerHTML = "";
 
           if (gapiInitialized) {
-              // Check if scale is calculated before attempting to display
               if (globalMaxDailyGroupCount > 0) {
-                  displayGroupCounts(); // Fetch and display new data
+                  displayGroupCounts();
               } else {
-                  // Handle case where scale calculation might have failed or resulted in 0
-                  // Check if an error message isn't already present
                   const currentStatus = groupCountsContainer?.textContent || "";
                    if (!currentStatus.includes("Error") && !currentStatus.includes("No feedback data")) {
-                     // If scale is 0 but no specific error/message shown, fetch data anyway.
-                     // displayGroupCounts() will show "No data found" if applicable.
                      console.warn("Global max is 0, attempting to display data anyway.");
-                     displayGroupCounts();
+                     displayGroupCounts(); // Will show "No data found" if needed
                    } else {
-                       // Keep the existing error or "No feedback" message
                        console.log("Keeping existing status message:", currentStatus);
+                       // Make sure date is still correct even if keeping old status
+                       setDateDisplay();
                    }
               }
           } else {
-             // Update status only if not already showing an init error
              if (!groupCountsContainer?.textContent?.includes("Error")) {
                 updateStatus("Cannot change date: GAPI not initialized.", true);
+             } else {
+                 // Keep init error message but ensure date is updated
+                 setDateDisplay();
              }
           }
       }
 
       // --- Initial Load Trigger ---
-       // Set date display immediately on script parse
        setDateDisplay();
-       // Start the GAPI loading process
-       gisLoaded(); // This function is the entry point via the script tag's onload
+       gisLoaded(); // Entry point via script tag onload
 
     </script>
 </body>
