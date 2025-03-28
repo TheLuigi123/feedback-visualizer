@@ -4,11 +4,27 @@
     <title>Feedback Dashboard</title>
     <style>
       /* CSS remains the same */
-      body { font-family: sans-serif; text-align: center; }
+      body { font-family: sans-serif; text-align: center; margin: 0; } /* Remove default body margin */
       #date-controls { margin-bottom: 20px; }
       #date-display { font-size: 1.5em; margin: 0 10px; }
       .arrow { cursor: pointer; font-size: 1.5em; padding: 5px; }
-      #group-counts { margin-top: 20px; display: inline-block; text-align: left; min-height: 50px; vertical-align: top; }
+      #group-counts {
+        margin-top: 20px;
+        text-align: left;
+        width: 100%; /* Make it full width */
+        padding: 0 10px; /* Add padding to the left and right */
+        box-sizing: border-box; /* Include padding in width calculation */
+        min-height: 50px;
+        vertical-align: top;
+      }
+
+      #comments-display {
+        text-align: left;
+        margin-top: 20px;
+        width: 100%; /* Make it full width */
+        padding: 0 10px; /* Add padding to the left and right */
+        box-sizing: border-box; /* Include padding in width calculation */
+      }
       .group-count { margin-bottom: 10px; display: grid; grid-template-columns: 110px 300px auto; gap: 10px; align-items: center; }
       .group-name { white-space: nowrap; }
       .bar-chart { display: flex; width: 300px; height: 20px; border: 1px solid #eee; }
@@ -17,7 +33,6 @@
       .button-2 { background-color: yellow; }
       .button-3 { background-color: red; }
       .group-total { font-size: 0.9em; padding-left: 5px; }
-      #comments-display { text-align: left; margin-top: 20px; display: inline-block; width: 90%; max-width: 600px; }
     </style>
 </head>
 <body>
@@ -231,85 +246,83 @@
             }
 
        function displayGroupCounts() { // Show counts even in error!
-            try {
-                    if (!gapiInitialized) {
-                         updateStatus("Error: Cannot display counts, GAPI not initialized.", true);
-                         return;
-                    }
 
-                    if (globalMaxDailyGroupCount <= 0) {
-                        // This might happen if initial fetch failed or sheet was empty
-                        if (!document.getElementById('group-counts').textContent.includes("Error") && !document.getElementById('group-counts').textContent.includes("No feedback data")) {
-                           updateStatus("Scale calculation pending or failed.");
-                        }
-                        console.warn("Cannot display: Global max count is zero or not calculated.");
-                        return; // prevent further execution
-                    }
+                    //check to see is a number
+try {
+if (!gapiInitialized) {
+      updateStatus("Error: Cannot display counts, GAPI not initialized.", true);
+      return;
+       }
 
-                     const formattedDate = formatDate(currentDate);
+       if (globalMaxDailyGroupCount <= 0) {
+           // This might happen if initial fetch failed or sheet was empty
+           if (!document.getElementById('group-counts').textContent.includes("Error") && !document.getElementById('group-counts').textContent.includes("No feedback data")) {
+              updateStatus("Scale calculation pending or failed.");
+           }
+           console.warn("Cannot display: Global max count is zero or not calculated.");
+            return; // prevent further execution
+       }
 
-                         const range = `${SHEET_NAME}!A:E`;
-                     const groupCountsContainer = document.getElementById('group-counts');
-                     const commentsContainer = document.getElementById('comments-display');
+                 const formattedDate = formatDate(currentDate);
+                 const range = `${SHEET_NAME}!A:E`;
+                 const groupCountsContainer = document.getElementById('group-counts');
+                 const commentsContainer = document.getElementById('comments-display');
 
-                     groupCountsContainer.innerHTML = "Loading day data...";
-                     commentsContainer.innerHTML = "";
+                 groupCountsContainer.innerHTML = "Loading day data...";
+                 commentsContainer.innerHTML = "";
 
-                     console.log(`Fetching A:E range for date: ${formattedDate}...`);
+                console.log(`Fetching A:D range for date: ${formattedDate}...`);
 
-                     // Make the call for gapi
-                       gapi.client.sheets.spreadsheets.values.get({
-                                spreadsheetId: SPREADSHEET_ID,
-                                range: range,
-                       }).then(response => {
-                                     console.log(`Successfully fetched A:D data for ${formattedDate}.`);
-                                     groupCountsContainer.innerHTML = "";
+             // Make the call for gapi
+                    gapi.client.sheets.spreadsheets.values.get({
+                        spreadsheetId: SPREADSHEET_ID,
+                       range: range,
+                    }).then(response => {
+                                 console.log(`Successfully fetched A:D data for ${formattedDate}.`);
+                                 groupCountsContainer.innerHTML = "";
 
-                                  const data = response.result.values;
+                              const data = response.result.values;
 
-                                  // Process and show
-                                  const groupButtonCounts = {};
-                                  const groupTotals = {};
-                                  const groupComments = {};
+                              // Process and show
+                              const groupButtonCounts = {};
+                              const groupTotals = {};
+                              const groupComments = {};
 
-                                  if (data && data.length > 1) {
-                                             for (let i = 1; i < data.length; i++) {
-                                                  const row = data[i];
-                                                  if (!row || row.length < 3) continue;
-                                                  const timestamp = row[0];
-                                                  const group = row[1];
-                                                  const button = parseInt(row[2]);
-                                                    //Here we are getting the comment to change the columns
+                               if (data && data.length > 1) {
+                                        for (let i = 1; i < data.length; i++) {
+                                            const row = data[i];
+                                            if (!row || row.length < 3) continue;
+                                            const timestamp = row[0];
+                                            const group = row[1];
+                                            const button = parseInt(row[2]);
+                                             //Here we are getting the comment to change the columns
+                                          const comment = (row.length > 4 && row[4]) ? String(row[4]).trim() : null;
+                                          if (timestamp && typeof timestamp === 'string' && timestamp.startsWith(formattedDate) && group && !isNaN(button) && buttonNumbers.includes(button)) {
+                                                 if (!groupButtonCounts[group]) groupButtonCounts[group] = {};
+                                                      groupButtonCounts[group][button] = (groupButtonCounts[group][button] || 0) + 1;
+                                                      groupTotals[group] = (groupTotals[group] || 0) + 1;
 
-                                                  const comment = (row.length > 4 && row[4]) ? String(row[4]).trim() : null;
-                                                  if (timestamp && typeof timestamp === 'string' && timestamp.startsWith(formattedDate) && group && !isNaN(button) && buttonNumbers.includes(button)) {
-                                                       if (!groupButtonCounts[group]) groupButtonCounts[group] = {};
-                                                       groupButtonCounts[group][button] = (groupButtonCounts[group][button] || 0) + 1;
-                                                       groupTotals[group] = (groupTotals[group] || 0) + 1;
-                                                       if (comment && comment.length > 0) {
-                                                            if (!groupComments[group]) groupComments[group] = [];
-                                                            groupComments[group].push(comment);
-                                                       }
-                                                  }
-                                             }
+                                                          if (comment && comment.length > 0) {
+                                                                    if (!groupComments[group]) groupComments[group] = [];
+                                                                      groupComments[group].push(comment);
+                                                         }
+                                                }
+                                              }
 
-                                    //Show the chart
-                                          let foundDataForDate=false;
+                                   //Show the chart
+                                  let foundDataForDate=false;
+                                   groupOrder.forEach(group => {
+                                         const totalCountForDay=groupTotals[group]||0;
+                                         if(totalCountForDay>0){
+                                               foundDataForDate=true;
+                                               const groupCountDiv=document.createElement('div');
 
-                                            groupOrder.forEach(group => {
-                                               const totalCountForDay=groupTotals[group]||0;
-
-                                               if(totalCountForDay>0){
-                                                 foundDataForDate=true;
-                                                 const groupCountDiv=document.createElement('div');
-                                                 groupCountDiv.className='group-count';
-
-                                                    const groupNameSpan=document.createElement('span');
+                                               groupCountDiv.className='group-count';
+                                                   const groupNameSpan=document.createElement('span');
                                                   groupNameSpan.className='group-name';
                                                   groupNameSpan.textContent=`${group}:`;
                                                   groupCountDiv.appendChild(groupNameSpan);
                                                  const barChartDiv=document.createElement('div');
-
                                                  barChartDiv.className='bar-chart';
                                                  buttonNumbers.forEach(button => {
                                                   const buttonCountForDay=groupButtonCounts[group]?.[button]||0;
@@ -317,21 +330,19 @@
                                                    const percentage=globalMaxDailyGroupCount>0?(buttonCountForDay/globalMaxDailyGroupCount)*100:0;
                                                   if(percentage>0){
                                                        const barDiv=document.createElement('div');
-
                                                      barDiv.className=`bar button-${button}`;
 
                                                      barDiv.style.width=`${percentage}%`;
 
                                                      barChartDiv.appendChild(barDiv);
 
-                                                  }
+                                                   }
 
-                                                   });
-                                                  groupCountDiv.appendChild(barChartDiv);
+                                                    });
+                                                    groupCountDiv.appendChild(barChartDiv);
 
-                                                  const totalCountSpan=document.createElement('span');
-                                                  totalCountSpan.className='group-total';
-
+                                                    const totalCountSpan=document.createElement('span');
+                                                   totalCountSpan.className='group-total';
                                                   totalCountSpan.textContent=`(${totalCountForDay})`;
 
                                                   groupCountDiv.appendChild(totalCountSpan);
@@ -343,41 +354,39 @@
                                                });
 
                                              if(!foundDataForDate){
+
                                                  groupCountsContainer.textContent="No data found for this date.";
+
                                                  commentsContainer.innerHTML="";
                                              }
-
-                                          commentsContainer.innerHTML="";
-
-                                           let commentsFoundForAnyGroup=false;
-
-                                          groupOrder.forEach(group => {
+                                       commentsContainer.innerHTML="";
+                                       let commentsFoundForAnyGroup=false;
+                                        groupOrder.forEach(group => {
 
                                              const commentsForGroup=groupComments[group];
 
                                              if(commentsForGroup&&commentsForGroup.length>0){
 
-                                                   commentsFoundForAnyGroup=true;
+                                                  commentsFoundForAnyGroup=true;
 
-                                                    const commentBlock=document.createElement('div');
+                                                   const commentBlock=document.createElement('div');
 
                                                    commentBlock.style.marginBottom='10px';
-
                                                  const nameLabel=document.createElement('strong');
                                                    nameLabel.textContent=`${group}: `;
 
                                                   commentBlock.appendChild(nameLabel);
 
-                                                  commentBlock.appendChild(document.createTextNode(commentsForGroup.join(' | ')));
+                                                 commentBlock.appendChild(document.createTextNode(commentsForGroup.join(' | ')));
 
-                                                  commentsContainer.appendChild(commentBlock);
+                                                 commentsContainer.appendChild(commentBlock);
                                                 }
+                                        });
 
-                                          });
-                                           if(!commentsFoundForAnyGroup && foundDataForDate){
-
-                                                  commentsContainer.textContent="No comments for this date.";
+                                          if(!commentsFoundForAnyGroup && foundDataForDate){
+                                                   commentsContainer.textContent="No comments for this date.";
                                            } else if(!foundDataForDate){
+
                                                  commentsContainer.innerHTML="";
                                            }
 
@@ -388,16 +397,16 @@
 
                                     }
 
-                           }).catch(err => {
-                             console.error(`Error display data for ${formattedDate}:`, err);
+                        }).catch(err => {
 
-                            updateStatus(`Error display data: ${err.result?.error?.message || err.message || 'An unknown error occurred'}.`, true); // change to error
-                        });
-                  } catch (ierr) {
-                         console.error(`Code logic errors display data, ${formattedDate}:`, ierr);
-                          document.getElementById("comments-display").innerHTML = `Error displaying comments! code problem`; // show error
+                           console.error(`Error display data for ${formattedDate}:`, err);
 
-                  }
+                         updateStatus(`Error display data: ${err.result?.error?.message || err.message || 'An unknown error occurred'}.`, true); // change to error
+                      });
+                      } catch (ierr) {
+                       console.error(`Code logic errors display data, ${formattedDate}:`, ierr);
+                        document.getElementById("comments-display").innerHTML = `Error displaying comments! code problem`; // show error
+              }
 
          }
 
@@ -422,7 +431,6 @@
 
       // Load client, then do gapi load, that's how sheets work!
        function loadFirst() {
-
            gisLoaded();
        }
         // --- Call load
