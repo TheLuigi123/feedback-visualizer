@@ -15,15 +15,46 @@
       #date-controls {
             margin-bottom: 20px;
             padding: 30px 10px 15px 10px; /* Added padding top/bottom */
+            /* Center the controls */
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
-      /* Make date clickable */
+      /* Style the date display element directly */
       #date-display {
-          font-size: 1.5em;
-          margin: 0 10px;
+          font-size: 1.5em; /* <<< Ensure desired font size */
+          margin: 0 15px;   /* <<< Adjust margin as needed */
           cursor: pointer; /* Indicate it's clickable for the calendar */
           border-bottom: 1px dashed #ccc; /* Optional: subtle visual cue */
+          padding: 5px 8px; /* Add some padding for better clicking */
           display: inline-block; /* Needed for proper spacing/border */
+          /* Ensure flatpickr input inherits styles */
+          line-height: normal; /* Override potential flatpickr styles */
+          color: inherit; /* Use body text color */
+          background: none; /* No background */
+          border: none; /* Flatpickr might add its own border, override if necessary */
+          text-align: center; /* Center text within the element */
+          min-width: 250px; /* Give it some minimum width */
       }
+      /* Override flatpickr default input styling if needed */
+      .flatpickr-input {
+          font-size: inherit !important; /* Force inherit font size */
+          font-family: inherit !important; /* Force inherit font family */
+          color: inherit !important;
+          background: none !important;
+          border: none !important; /* Remove flatpickr border */
+          padding: 0 !important; /* Remove flatpickr padding */
+          margin: 0 !important;
+          text-align: center !important; /* Center text */
+          box-shadow: none !important; /* Remove flatpickr shadow */
+          outline: none !important; /* Remove focus outline */
+          width: auto !important; /* Allow it to size naturally */
+          display: inline-block !important;
+          box-sizing: content-box !important; /* Prevent box model issues */
+          height: auto !important; /* Reset height */
+      }
+
+
       .arrow { cursor: pointer; font-size: 1.5em; padding: 5px; }
 
       #group-counts {
@@ -39,11 +70,10 @@
         align-items: stretch;
       }
 
-       /* New: Styles for Color Filters */
       #color-filters {
           margin-top: 25px;
           margin-bottom: 15px;
-          text-align: center; /* Center the circles */
+          text-align: center;
       }
       .color-filter-circle {
           display: inline-block;
@@ -52,22 +82,16 @@
           border-radius: 50%;
           margin: 0 10px;
           cursor: pointer;
-          border: 2px solid transparent; /* For active state indication */
-          opacity: 0.4; /* Faded by default */
+          border: 2px solid transparent;
+          opacity: 0.4;
           transition: opacity 0.3s ease, border-color 0.3s ease;
       }
       .color-filter-circle.filter-green { background-color: green; }
       .color-filter-circle.filter-yellow { background-color: yellow; }
       .color-filter-circle.filter-red { background-color: red; }
 
-      .color-filter-circle:hover {
-          opacity: 0.7;
-      }
-      .color-filter-circle.active {
-          opacity: 1; /* Active color */
-          border-color: #555; /* Add border to highlight active */
-      }
-
+      .color-filter-circle:hover { opacity: 0.7; }
+      .color-filter-circle.active { opacity: 1; border-color: #555; }
 
       #comments-display {
         text-align: left;
@@ -75,27 +99,27 @@
         width: 100%;
         padding: 0 10px;
         box-sizing: border-box;
-        font-size: 1.5em; /* Adjusted font size for comments */
+        font-size: 1.5em;
       }
 
       .group-count {
             margin-bottom: 10px;
-            display: flex; /* Use flexbox */
-            align-items: center; /* Vertically align items */
+            display: flex;
+            align-items: center;
       }
       .group-name {
             white-space: nowrap;
-            width: 120px; /* Fixed width for group name labels */
-            text-align: left; /* Align text to the left */
-            flex-shrink: 0;  /* Prevent shrinking */
-            margin-right: 60px; /* Increased space between label and bar chart */
+            width: 120px;
+            text-align: left;
+            flex-shrink: 0;
+            margin-right: 60px;
         }
       .bar-chart {
             display: flex;
-            width: 100%; /* Make the bar chart fill available space */
+            width: 100%;
             height: 20px;
             border: 1px solid #eee;
-            overflow: hidden; /* Prevent bars from overflowing */
+            overflow: hidden;
         }
 
       .bar { height: 100%; }
@@ -105,8 +129,8 @@
 
       .group-total {
         font-size: 0.9em;
-        margin-left: 20px; /* Space between bar and total */
-        white-space: nowrap; /* Prevent wrapping */
+        margin-left: 20px;
+        white-space: nowrap;
         }
     </style>
 </head>
@@ -114,21 +138,20 @@
 
     <div id="date-controls">
         <span class="arrow" onclick="changeDate(-1)"><</span>
-        <!-- Date display now triggers calendar -->
+        <!-- This single span will be enhanced by flatpickr -->
         <span id="date-display">Loading...</span>
         <span class="arrow" onclick="changeDate(1)">></span>
     </div>
 
     <div id="group-counts">Initializing...</div>
 
-    <!-- New: Color Filter Section -->
     <div id="color-filters">
         <span class="color-filter-circle filter-green" data-color-value="1" title="Filter Green Comments" onclick="handleColorFilterClick(this, 1)"></span>
         <span class="color-filter-circle filter-yellow" data-color-value="2" title="Filter Yellow Comments" onclick="handleColorFilterClick(this, 2)"></span>
         <span class="color-filter-circle filter-red" data-color-value="3" title="Filter Red Comments" onclick="handleColorFilterClick(this, 3)"></span>
     </div>
 
-    <hr style="margin: 0 0 20px 0;"> <!-- Adjusted margin -->
+    <hr style="margin: 0 0 20px 0;">
     <div id="comments-display"></div>
 
     <!-- Load GAPI library -->
@@ -139,22 +162,11 @@
     <script>
          // --- Helper Functions ---
          function formatDate(date) {
+          // Format for backend matching (DD/MM/YY)
           const day = String(date.getDate()).padStart(2, '0');
           const month = String(date.getMonth() + 1).padStart(2, '0');
-          const year = String(date.getFullYear()).slice(2); // Keep YY format
+          const year = String(date.getFullYear()).slice(2);
           return `${day}/${month}/${year}`;
-        }
-        // Helper to parse DD/MM/YY string back to Date object
-        function parseDate(dateString) {
-            const parts = dateString.split('/');
-            if (parts.length === 3) {
-                // Assuming YY -> 20YY
-                const year = parseInt(parts[2], 10) + (parts[2].length === 2 ? 2000 : 0);
-                const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
-                const day = parseInt(parts[0], 10);
-                return new Date(year, month, day);
-            }
-            return null; // Invalid format
         }
 
         function getWeekday(date) {
@@ -162,87 +174,102 @@
         }
 
          function calculateGlobalMax(allData) {
-          const dailyGroupTotals = {};
-          let maxFound = 0;
+            // ... (function remains the same)
+            const dailyGroupTotals = {};
+            let maxFound = 0;
 
-          if (allData && allData.length > 1) {
-            for (let i = 1; i < allData.length; i++) {
-              const row = allData[i];
-              if (!row || row.length < 2 || !row[0] || !row[1]) {
-                continue;
-              }
+            if (allData && allData.length > 1) {
+                for (let i = 1; i < allData.length; i++) {
+                const row = allData[i];
+                if (!row || row.length < 2 || !row[0] || !row[1]) {
+                    continue;
+                }
 
-              const timestamp = row[0]; // Expect string like DD/MM/YY HH:MM:SS
-              const group = row[1];
-              let datePart = '';
+                const timestamp = row[0]; // Expect string like DD/MM/YY HH:MM:SS
+                const group = row[1];
+                let datePart = '';
 
-              if (typeof timestamp === 'string') {
-                  // Extract DD/MM/YY part
-                  const match = timestamp.match(/^(\d{1,2}\/\d{1,2}\/\d{2,4})/);
-                   if (match) {
-                       // Ensure DD/MM/YY format for key
-                       const dateParts = match[1].split('/');
-                       if (dateParts.length === 3) {
-                            const day = String(dateParts[0]).padStart(2,'0');
-                            const month = String(dateParts[1]).padStart(2,'0');
-                            const year = dateParts[2].length === 4 ? dateParts[2].slice(2) : String(dateParts[2]).padStart(2,'0');
-                             datePart = `${day}/${month}/${year}`;
-                       } else continue;
-                   } else continue;
-              } else {
-                  continue;
-              }
+                if (typeof timestamp === 'string') {
+                    // Extract DD/MM/YY part
+                    const match = timestamp.match(/^(\d{1,2}\/\d{1,2}\/\d{2,4})/);
+                    if (match) {
+                        // Ensure DD/MM/YY format for key
+                        const dateParts = match[1].split('/');
+                        if (dateParts.length === 3) {
+                                const day = String(dateParts[0]).padStart(2,'0');
+                                const month = String(dateParts[1]).padStart(2,'0');
+                                const year = dateParts[2].length === 4 ? dateParts[2].slice(2) : String(dateParts[2]).padStart(2,'0');
+                                datePart = `${day}/${month}/${year}`;
+                        } else continue;
+                    } else continue;
+                } else {
+                    continue;
+                }
 
-              if (!dailyGroupTotals[datePart]) dailyGroupTotals[datePart] = {};
-              if (!dailyGroupTotals[datePart][group]) dailyGroupTotals[datePart][group] = 0;
+                if (!dailyGroupTotals[datePart]) dailyGroupTotals[datePart] = {};
+                if (!dailyGroupTotals[datePart][group]) dailyGroupTotals[datePart][group] = 0;
 
-              dailyGroupTotals[datePart][group]++;
+                dailyGroupTotals[datePart][group]++;
 
-              if (dailyGroupTotals[datePart][group] > maxFound) {
-                maxFound = dailyGroupTotals[datePart][group];
-              }
+                if (dailyGroupTotals[datePart][group] > maxFound) {
+                    maxFound = dailyGroupTotals[datePart][group];
+                }
+                }
             }
-          }
-          console.log("Global Max Daily Group Count Calculated:", maxFound);
-          return maxFound;
-        }
+            console.log("Global Max Daily Group Count Calculated:", maxFound);
+            return maxFound;
+         }
 
 
        function updateStatus(message, isError = false) {
+            // ... (function remains mostly the same)
             console[isError ? 'error' : 'log']("Status:", message);
             const groupCountsContainer = document.getElementById('group-counts');
             const commentsContainer = document.getElementById('comments-display');
-            const dateDisplay = document.getElementById('date-display');
+            const dateDisplay = document.getElementById('date-display'); // Reference the date element
 
             if (groupCountsContainer) groupCountsContainer.textContent = message;
-            // Don't clear comments here necessarily, let displayGroupCounts handle it
-            // if (commentsContainer) commentsContainer.innerHTML = "";
+            // if (commentsContainer) commentsContainer.innerHTML = ""; // Clear comments on status update/error?
 
             if (isError) {
-                if(dateDisplay) dateDisplay.textContent = "Error";
-                 // Hide filters on critical error? Maybe not needed.
+                // If there's an error, still try to show something in the date display
+                 if (dateDisplay && !calendarInstance) { // Only update text if calendar isn't working
+                     dateDisplay.textContent = "Error";
+                 } else if (dateDisplay) {
+                     // Maybe disable calendar on error? Or just show error in counts area.
+                     console.warn("Error occurred, keeping calendar active if initialized.");
+                 }
+            } else if (dateDisplay && !calendarInstance && message.startsWith("Loading")){
+                // Show Loading... in date display only if calendar not ready
+                dateDisplay.textContent = "Loading...";
             }
-            // setDateDisplay(); // Call explicitly when needed
+            // setDateDisplay() will be called when data is ready or date changes
        }
 
+        // This function NOW primarily updates the flatpickr instance
         function setDateDisplay() {
           try {
-            const dateDisplay = document.getElementById('date-display');
-            if (dateDisplay) {
-                const weekday = getWeekday(currentDate);
-                const formattedDate = formatDate(currentDate);
-                dateDisplay.textContent = `${weekday}, ${formattedDate}`;
-                // Update flatpickr instance if it exists
-                if (calendarInstance) {
-                    calendarInstance.setDate(currentDate, false); // Update calendar without triggering onChange
-                }
+              // Update the flatpickr calendar's date.
+              // Flatpickr itself will handle updating the text in the #date-display element
+              // based on the dateFormat specified during initialization.
+            if (calendarInstance) {
+                calendarInstance.setDate(currentDate, false); // Update calendar without triggering onChange
+                 console.log("setDateDisplay updated calendar instance to:", currentDate);
             } else {
-                console.error("Date display element not found!");
+                 // Fallback if calendar hasn't loaded yet (e.g., initial load)
+                 // We still need *some* text visible initially.
+                 const dateDisplay = document.getElementById('date-display');
+                 if (dateDisplay) {
+                     const weekday = getWeekday(currentDate);
+                     const formattedDateForDisplay = flatpickr.formatDate(currentDate, "l, d/m/y"); // Use flatpickr format
+                     dateDisplay.textContent = formattedDateForDisplay;
+                 }
+                console.warn("Calendar instance not ready, set text content as fallback.");
             }
         } catch (error) {
             console.error("Error setting date display:", error);
             const dateDisplay = document.getElementById('date-display');
-            if(dateDisplay) dateDisplay.textContent = "Date Error";
+            if(dateDisplay) dateDisplay.textContent = "Date Error"; // Show error in the display
         }
         }
       // --- Constants ---
@@ -256,28 +283,28 @@
       let currentDate = new Date();
       let globalMaxDailyGroupCount = 0;
       let gapiInitialized = false;
-      let calendarInstance = null; // To hold the flatpickr instance
-      let activeColorFilter = null; // null = show all, 1=green, 2=yellow, 3=red
-      // New: Store processed comments data for the current day to avoid re-fetching on filter change
+      let calendarInstance = null;
+      let activeColorFilter = null;
       let currentDayCommentsData = {};
-
 
       const weekdays = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
       const groupOrder = ["Besucher", "Lehrer", "9-12 Klasse", "5-8 Klasse", "1-4 Klasse"];
-      const buttonNumbers = [1, 2, 3]; // Corresponds to Green, Yellow, Red
+      const buttonNumbers = [1, 2, 3];
 
       // --- GAPI Initialization Flow ---
 
       function gisLoaded() {
         console.log("GAPI script loaded (gisLoaded called). Loading 'client:auth2' modules...");
+        // Set initial date text before full API load, using fallback method
+        setDateDisplay();
         updateStatus("Loading API modules...");
-        setDateDisplay(); // Show initial date early
         gapi.load('client:auth2', initializeGapiClient);
       }
 
       function initializeGapiClient() {
           console.log("'client:auth2' modules loaded. Initializing GAPI client...");
           updateStatus("Initializing API client...");
+          // Set date again in case it took time
           setDateDisplay();
 
           try {
@@ -292,59 +319,81 @@
 
                      // Initialize flatpickr Calendar HERE after GAPI is ready
                      initializeCalendar();
+                     // Now that calendar is initialized, set the date definitively via the instance
+                     setDateDisplay(); // This will now use calendarInstance.setDate
 
                      updateStatus("Fetching data to calculate scale...");
-                     setDateDisplay();
                      fetchDataForScaleCalculation();
                 } else {
+                     // ... error handling ...
                      console.error("gapi.client.init succeeded BUT gapi.client.sheets is NOT available!");
                      updateStatus("Error: Sheets API structure not found.", true);
                      gapiInitialized = false;
+                     setDateDisplay(); // Try to update date text even on error
                 }
             }).catch(err => {
                 console.error("Error during gapi.client.init promise:", err);
                 handleInitError(err);
                 gapiInitialized = false;
+                setDateDisplay(); // Try to update date text even on error
             });
             console.log("gapi.client.init call issued (asynchronously).");
           } catch (error) {
             console.error("Synchronous error during gapi.client.init setup:", error);
             updateStatus(`Initialization Code Error: ${error.message}`, true);
             gapiInitialized = false;
+            setDateDisplay(); // Try to update date text even on error
           }
       }
 
-       // New: Initialize Flatpickr
+       // Initialize Flatpickr
        function initializeCalendar() {
            const dateDisplayElement = document.getElementById('date-display');
-           if (dateDisplayElement) {
+           if (dateDisplayElement && !calendarInstance) { // Prevent re-initialization
                calendarInstance = flatpickr(dateDisplayElement, {
-                   dateFormat: "d/m/y", // Match our display format
+                   // Format for display inside the element (Weekday, DD/MM/YY)
+                   dateFormat: "l, d/m/y",
                    defaultDate: currentDate,
-                   altInput: false, // Don't create a hidden input
-                   // wrap: true, // Might need if attaching to a wrapper div, but ok on span here
+                   altInput: false, // Modify the original element directly
+                   allowInput: false, // Prevent manual typing into the span
+                   // We don't need altFormat if altInput is false
                    onChange: function(selectedDates, dateStr, instance) {
                        if (selectedDates.length > 0) {
                            console.log("Calendar date selected:", selectedDates[0]);
-                           // Check if the date actually changed to avoid redundant loads
+                           // Check if the date actually changed
                            if (formatDate(selectedDates[0]) !== formatDate(currentDate)) {
                                currentDate = selectedDates[0];
-                               setDateDisplay(); // Update the text display
-                               // Clear filters and fetch/display new data
-                               resetColorFilters(); // Deselect any active color filter
-                               displayGroupCounts();
+                               // setDateDisplay(); // No longer needed here, flatpickr updates display
+                               resetColorFilters();
+                               displayGroupCounts(); // Fetch data for the new date
                            }
                        }
                    },
+                   // Optional: Add hook to ensure style consistency after render
+                    onReady: function(selectedDates, dateStr, instance) {
+                        instance.input.readOnly = true; // Make the underlying input readonly
+                        // Ensure styles are applied correctly (might help if CSS is flaky)
+                        instance.input.style.fontSize = 'inherit';
+                        instance.input.style.textAlign = 'center';
+                    },
+                    onOpen: function(selectedDates, dateStr, instance) {
+                        // Optional: Add class when calendar is open if needed for styling
+                    },
+                    onClose: function(selectedDates, dateStr, instance) {
+                         // Optional: Remove class when calendar closes
+                    }
                });
                console.log("Flatpickr calendar initialized.");
-           } else {
+           } else if (!dateDisplayElement) {
                console.error("Could not find #date-display to initialize calendar.");
+           } else {
+               console.log("Flatpickr already initialized.");
            }
        }
 
 
       function handleInitError(err) {
+           // ... (error handling remains the same)
            let errorMsg = err.result?.error?.message || err.message || 'Unknown init error';
            // ... (rest of error handling as before)
            console.error("Initialization Error Details:", err);
@@ -352,7 +401,7 @@
       }
 
       function fetchDataForScaleCalculation() {
-          // ... (rest of function remains the same)
+           // ... (function remains the same)
             if (!gapiInitialized) {
                updateStatus("Error: Cannot fetch scale data, GAPI not initialized.", true);
                return;
@@ -362,8 +411,8 @@
             gapi.client.sheets.spreadsheets.values.get({
                 spreadsheetId: SPREADSHEET_ID,
                 range: `${SHEET_NAME}!A:B`,
-                dateTimeRenderOption: 'FORMATTED_STRING', // "DD/MM/YYYY HH:MM:SS" or similar
-                valueRenderOption: 'FORMATTED_VALUE' // Get raw strings for dates/groups
+                dateTimeRenderOption: 'FORMATTED_STRING',
+                valueRenderOption: 'FORMATTED_VALUE'
             }).then(response => {
                  console.log("Successfully fetched A:B data.");
                  const allData = response.result.values;
@@ -372,11 +421,11 @@
                  if (globalMaxDailyGroupCount <= 0) {
                      console.warn("No data found or max count is zero after scale calculation.");
                      updateStatus("No feedback data found in the sheet.");
-                     setDateDisplay();
-                     displayGroupCounts(); // Call display even if no data
+                    //  setDateDisplay(); // Date already set
+                     displayGroupCounts();
                  } else {
                      console.log("Scale calculated. Displaying initial data.");
-                     setDateDisplay();
+                    //  setDateDisplay(); // Date already set
                      displayGroupCounts();
                  }
             }).catch(err => {
@@ -391,25 +440,25 @@
       }
 
        function displayGroupCounts() {
-            // ... (initial checks remain the same)
+           // ... (function remains largely the same - data fetching and processing)
             if (!gapiInitialized) {
-                // ...
+                // ... handle not initialized
                 return;
             }
 
-            const formattedDate = formatDate(currentDate); // Use consistent DD/MM/YY format
-            const range = `${SHEET_NAME}!A:E`; // Timestamp, Group, Button, *, Comment
+            const formattedDate = formatDate(currentDate); // DD/MM/YY for matching
+            const range = `${SHEET_NAME}!A:E`;
             const groupCountsContainer = document.getElementById('group-counts');
             const commentsContainer = document.getElementById('comments-display');
 
             if (!groupCountsContainer || !commentsContainer) {
-                 // ...
+                // ... handle missing elements
                 return;
             }
 
             groupCountsContainer.innerHTML = "Loading day data...";
-            commentsContainer.innerHTML = ""; // Clear comments initially
-            currentDayCommentsData = {}; // Reset stored comments for the new day
+            commentsContainer.innerHTML = "";
+            currentDayCommentsData = {};
 
             console.log(`Fetching ${range} range for date: ${formattedDate}...`);
 
@@ -417,31 +466,30 @@
                 gapi.client.sheets.spreadsheets.values.get({
                     spreadsheetId: SPREADSHEET_ID,
                     range: range,
-                    dateTimeRenderOption: 'FORMATTED_STRING', // "DD/MM/YYYY HH:MM:SS"
-                    valueRenderOption: 'FORMATTED_VALUE' // Get comment string as entered
+                    dateTimeRenderOption: 'FORMATTED_STRING',
+                    valueRenderOption: 'FORMATTED_VALUE'
                 }).then(response => {
                     console.log(`Successfully fetched ${range} data for ${formattedDate}.`);
-                    groupCountsContainer.innerHTML = "";
+                    groupCountsContainer.innerHTML = ""; // Clear "Loading..."
 
                     const data = response.result.values;
                     const groupButtonCounts = {};
                     const groupTotals = {};
-                    // Use the global currentDayCommentsData to store structured comments
-                    currentDayCommentsData = {}; // Initialize for the day
+                    currentDayCommentsData = {};
                     let foundDataForDate = false;
 
+                    // --- Data Processing Loop ---
                     if (data && data.length > 1) {
                         for (let i = 1; i < data.length; i++) {
                             const row = data[i];
                             if (!row || row.length < 3 || !row[0] || !row[1] || !row[2]) continue;
 
-                            const timestamp = row[0]; // String: "DD/MM/YYYY HH:MM:SS" or similar
+                            const timestamp = row[0];
                             const group = String(row[1]).trim();
-                            const button = parseInt(row[2]); // Color: 1, 2, or 3
+                            const button = parseInt(row[2]);
                             const comment = (row.length > 4 && row[4]) ? String(row[4]).trim() : null;
 
-                            // Match date part only (DD/MM/YY)
-                             let rowDatePart = '';
+                            let rowDatePart = '';
                              if (typeof timestamp === 'string') {
                                  const match = timestamp.match(/^(\d{1,2}\/\d{1,2}\/\d{2,4})/);
                                  if (match) {
@@ -456,7 +504,6 @@
                              } else continue;
 
 
-                             // Check if the row's date matches the currently selected date
                             if (rowDatePart === formattedDate && group && groupOrder.includes(group) && !isNaN(button) && buttonNumbers.includes(button)) {
                                 foundDataForDate = true;
 
@@ -465,10 +512,9 @@
                                 groupButtonCounts[group][button] = (groupButtonCounts[group][button] || 0) + 1;
                                 groupTotals[group] = (groupTotals[group] || 0) + 1;
 
-                                // Aggregate comments with their color
+                                // Aggregate comments with color
                                 if (comment && comment.length > 0) {
                                     if (!currentDayCommentsData[group]) currentDayCommentsData[group] = [];
-                                    // Store comment object with text and color
                                     currentDayCommentsData[group].push({ text: comment, color: button });
                                 }
                             }
@@ -479,7 +525,7 @@
 
                     // --- Render Group Counts and Bars ---
                     groupOrder.forEach(group => {
-                         // ... (Rendering logic for bars remains the same)
+                        // ... (Rendering logic for bars remains the same)
                         const totalCountForDay = groupTotals[group] || 0;
                         const groupCountDiv = document.createElement('div');
                         groupCountDiv.className = 'group-count';
@@ -492,10 +538,7 @@
                         if (totalCountForDay > 0 && globalMaxDailyGroupCount > 0) {
                             buttonNumbers.forEach(button => {
                                 const buttonCountForDay = groupButtonCounts[group]?.[button] || 0;
-                                // Use totalCountForDay for percentage within the group's total bar
-                                // const percentage = (buttonCountForDay / totalCountForDay) * 100; // Percentage within group total
-                                // OR use globalMaxDailyGroupCount for consistent scale across groups
-                                const percentage = globalMaxDailyGroupCount > 0 ? (buttonCountForDay / globalMaxDailyGroupCount) * 100 : 0; // Percentage relative to max
+                                const percentage = globalMaxDailyGroupCount > 0 ? (buttonCountForDay / globalMaxDailyGroupCount) * 100 : 0;
 
                                 if (percentage > 0) {
                                     const barDiv = document.createElement('div');
@@ -517,22 +560,16 @@
 
                     if (!foundDataForDate && groupCountsContainer.innerHTML === "") {
                         groupCountsContainer.textContent = "No data found for this date.";
-                        // Ensure comments are also cleared/show message
                     }
 
                     // --- Render Comments (Initial render based on stored data and current filter) ---
-                     renderComments(); // Use the dedicated function
-
-                    if (!foundDataForDate) {
-                        // If no data for the date at all, ensure comments section reflects this
-                        // (renderComments handles the "No comments" message internally if currentDayCommentsData is empty)
-                    }
+                     renderComments();
 
                 }).catch(err => {
+                    // ... (error handling for fetch remains the same)
                     console.error(`Error fetching or processing data for ${formattedDate}:`, err);
                     let errorMsg = err.result?.error?.message || err.message || 'Unknown error during data display';
                     updateStatus(`Error displaying data: ${errorMsg}`, true);
-                    // Clear potentially stale data
                     groupCountsContainer.innerHTML = `Error loading data for ${formattedDate}.`;
                     commentsContainer.innerHTML = "";
                     currentDayCommentsData = {};
@@ -543,8 +580,8 @@
             }
        }
 
-       // New: Function dedicated to rendering comments based on currentDayCommentsData and activeColorFilter
        function renderComments() {
+            // ... (function remains the same)
             const commentsContainer = document.getElementById('comments-display');
             if (!commentsContainer) return;
 
@@ -554,13 +591,12 @@
             groupOrder.forEach(group => {
                 const commentsForGroup = currentDayCommentsData[group] || []; // Get stored comments for the group
 
-                // Filter comments based on the active color filter
                 const filteredComments = commentsForGroup.filter(comment => {
                     return activeColorFilter === null || comment.color === activeColorFilter;
                 });
 
                 if (filteredComments.length > 0) {
-                    commentsFoundForFilter = true; // Found comments matching the filter
+                    commentsFoundForFilter = true;
 
                     const commentBlock = document.createElement('div');
                     commentBlock.style.marginBottom = '15px';
@@ -569,88 +605,82 @@
                     nameLabel.textContent = `${group}: `;
                     commentBlock.appendChild(nameLabel);
 
-                    // Join the text of the filtered comments
                     commentBlock.appendChild(document.createTextNode(filteredComments.map(c => c.text).join(' | ')));
                     commentsContainer.appendChild(commentBlock);
                 }
             });
 
-            // Display a message if no comments were found for the current date/filter
             if (!commentsFoundForFilter) {
-                 if (Object.keys(currentDayCommentsData).length === 0) {
-                    // No comments were fetched for this date at all
-                    commentsContainer.textContent = ""; // Or keep it empty if group counts show "no data"
+                 if (Object.keys(currentDayCommentsData).length === 0 && document.getElementById('group-counts')?.textContent !== "No data found for this date."){
+                    // Only show "no comments" if there *was* data for the date but no actual comments.
+                    commentsContainer.textContent = "No comments entered for this date.";
                  } else if (activeColorFilter !== null) {
-                    // Data exists for the date, but not for this specific color filter
                     const colors = { 1: 'green', 2: 'yellow', 3: 'red' };
                     commentsContainer.textContent = `No ${colors[activeColorFilter] || ''} comments for this date.`;
-                 } else {
-                     // No filter active, but no comments were entered for this date
+                 } else if (Object.keys(currentDayCommentsData).length > 0) {
+                     // Data exists, no filter, but still no comments found (maybe comments only had empty strings?)
                      commentsContainer.textContent = "No comments entered for this date.";
+                 } else {
+                    // No data fetched at all, keep comments empty.
+                    commentsContainer.innerHTML = "";
                  }
             }
        }
 
-
-      // New: Handle clicks on color filter circles
       function handleColorFilterClick(element, colorValue) {
-          const circles = document.querySelectorAll('.color-filter-circle');
+            // ... (function remains the same)
+            const circles = document.querySelectorAll('.color-filter-circle');
 
-          if (element.classList.contains('active')) {
-              // Clicked the already active circle - deactivate it
-              element.classList.remove('active');
-              activeColorFilter = null;
-          } else {
-              // Deactivate any other active circle
-              circles.forEach(circle => circle.classList.remove('active'));
-              // Activate the clicked one
-              element.classList.add('active');
-              activeColorFilter = colorValue;
-          }
-
-          // Re-render the comments based on the new filter state
-          renderComments();
+            if (element.classList.contains('active')) {
+                element.classList.remove('active');
+                activeColorFilter = null;
+            } else {
+                circles.forEach(circle => circle.classList.remove('active'));
+                element.classList.add('active');
+                activeColorFilter = colorValue;
+            }
+            renderComments();
       }
 
-       // New: Helper to reset filters visually and state
       function resetColorFilters() {
+           // ... (function remains the same)
           const circles = document.querySelectorAll('.color-filter-circle');
           circles.forEach(circle => circle.classList.remove('active'));
           activeColorFilter = null;
-          // No need to call renderComments here, as displayGroupCounts will call it after fetching new data.
       }
 
-
       function changeDate(delta) {
-          currentDate.setDate(currentDate.getDate() + delta);
-          setDateDisplay(); // Update display immediately
+          // Calculate the new date
+          const newDate = new Date(currentDate); // Clone current date
+          newDate.setDate(newDate.getDate() + delta);
+          currentDate = newDate; // Update the state variable
 
+          // Update the display (which now uses flatpickr)
+          setDateDisplay(); // This will call calendarInstance.setDate
+
+          // Clear old data and filters
           const groupCountsContainer = document.getElementById('group-counts');
           const commentsContainer = document.getElementById('comments-display');
-
           if (groupCountsContainer) groupCountsContainer.innerHTML = "Loading...";
           if (commentsContainer) commentsContainer.innerHTML = "";
-
-          // Reset color filter when changing date
           resetColorFilters();
 
+          // Fetch new data if GAPI is ready
           if (gapiInitialized) {
-               // Fetch and display data for the new date
-               // displayGroupCounts will handle scale check and rendering
                displayGroupCounts();
           } else {
+             // Handle case where GAPI isn't ready yet (should be rare after init)
              if (!groupCountsContainer?.textContent?.includes("Error")) {
-                updateStatus("Cannot change date: GAPI not initialized.", true);
+                updateStatus("Cannot change date display: GAPI not initialized.", true);
              } else {
-                 setDateDisplay(); // Keep init error message, but update date
+                 // Keep init error message but ensure date display reflects the change attempt
+                 setDateDisplay();
              }
           }
       }
 
       // --- Initial Load Trigger ---
-       // Set initial date display text before GAPI loads
-       setDateDisplay();
-       // Start GAPI loading process
+       // setDateDisplay(); // Called within gisLoaded now
        // gisLoaded(); // Called by the script tag's onload
 
     </script>
