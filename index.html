@@ -10,27 +10,33 @@
           font-family: sans-serif;
           text-align: center;
           margin: 0;
-          padding-top: 60px;
+          padding-top: 60px; /* Keep top padding for fixed elements like language switcher */
           font-size: 2em;
           position: relative;
           min-height: 100vh;
-          /* --- ADDED Page Padding --- */
-          padding-left: 5px;
-          padding-right: 5px;
-          box-sizing: border-box;
-          /* --- End Page Padding --- */
+          /* REMOVED padding-left, padding-right, box-sizing from here */
       }
+
+      /* --- ADDED WRAPPER STYLE --- */
+      #page-wrapper {
+          padding-left: 10px;  /* 10px padding on the left */
+          padding-right: 10px; /* 10px padding on the right */
+          box-sizing: border-box; /* Include padding in width calculation */
+      }
+      /* --- END WRAPPER STYLE --- */
+
+
       #language-switcher { position: absolute; top: 15px; right: 20px; cursor: pointer; z-index: 100; }
       #lang-flag { display: inline-block; font-size: 2.2em; line-height: 1; user-select: none; }
 
       #date-controls {
           margin-bottom: 20px;
-          padding: 10px;
+          padding: 10px 0; /* Adjusted padding - no need for horizontal padding here now */
           display: flex;
           justify-content: center;
           align-items: center;
           min-height: 60px;
-          gap: 20px; /* Spacing between items */
+          gap: 20px;
       }
       #date-display.flatpickr-input { display: none !important; }
       #date-controls input.flatpickr-input {
@@ -45,50 +51,72 @@
       #current-weekday {
          font-size: 1.5em; color: inherit; margin: 0;
          vertical-align: middle; white-space: nowrap;
+         /* ADDED more space before weekday (alternative to arrow margin) */
+         /* padding-left: 5px; /* Adjust as needed */
       }
       .arrow {
          cursor: pointer; font-size: 1.5em; padding: 5px; margin: 0;
          flex-shrink: 0; vertical-align: middle;
       }
 
+      /* --- ADDED: Specific margin for the left arrow --- */
+      #date-controls .arrow:first-child {
+          margin-right: 5px; /* Add 5px space AFTER the left arrow, before the gap */
+      }
+      /* --- END: Specific margin --- */
+
+
       #color-filters { margin-top: 25px; margin-bottom: 15px; text-align: center; }
       .color-filter-circle { display: inline-block; width: 40px; height: 40px; border-radius: 50%; margin: 0 15px; cursor: pointer; border: 2px solid transparent; background-color: #cccccc; transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.2s ease; vertical-align: middle; }
       .color-filter-circle.filter-green {} .color-filter-circle.filter-yellow {} .color-filter-circle.filter-red {}
       .color-filter-circle:hover { border-color: #aaaaaa; } .color-filter-circle.active { border-color: #333333; }
       .color-filter-circle.active.filter-green { background-color: green; } .color-filter-circle.active.filter-yellow { background-color: yellow; } .color-filter-circle.active.filter-red { background-color: red; }
-      #group-counts { margin-top: 20px; text-align: left; width: 100%; /* padding: 0 10px; NO - Let body padding handle sides */ box-sizing: border-box; min-height: 50px; vertical-align: top; display: flex; flex-direction: column; align-items: stretch; }
-      #comments-display { text-align: left; margin-top: 20px; width: 100%; /* padding: 0 10px; NO - Let body padding handle sides */ box-sizing: border-box; font-size: 1.5em; }
+      #group-counts { margin-top: 20px; text-align: left; width: 100%; box-sizing: border-box; min-height: 50px; vertical-align: top; display: flex; flex-direction: column; align-items: stretch; }
+      #comments-display { text-align: left; margin-top: 20px; width: 100%; box-sizing: border-box; font-size: 1.5em; }
       .group-count { margin-bottom: 10px; display: flex; align-items: center; }
       .group-name { white-space: nowrap; width: 120px; text-align: left; flex-shrink: 0; margin-right: 60px; }
       .bar-chart { display: flex; width: 100%; height: 20px; border: 1px solid #eee; overflow: hidden; }
       .bar { height: 100%; } .button-1 { background-color: green; } .button-2 { background-color: yellow; } .button-3 { background-color: red; }
       .group-total { font-size: 0.9em; margin-left: 20px; white-space: nowrap; }
+      hr { /* Adjusted margin slightly */
+          margin: 20px 0;
+          border: 0;
+          height: 1px;
+          background: #ccc;
+      }
     </style>
 </head>
 <body>
 
-    <!-- HTML Elements -->
-    <div id="language-switcher" onclick="toggleLanguage()">
-        <span id="lang-flag" title="Switch Language"></span>
+    <!-- START: Added Page Wrapper -->
+    <div id="page-wrapper">
+
+        <!-- HTML Elements -->
+        <div id="language-switcher" onclick="toggleLanguage()">
+            <span id="lang-flag" title="Switch Language"></span>
+        </div>
+
+        <div id="date-controls">
+            <span class="arrow" onclick="changeDate(-1)"><</span>
+            <span id="current-weekday" style="vertical-align: middle;"></span>
+            <span id="date-display">Loading Date...</span>
+            <span class="arrow" onclick="changeDate(1)">></span>
+        </div>
+
+        <div id="group-counts">Initializing...</div>
+
+        <div id="color-filters">
+            <span class="color-filter-circle filter-green" data-color-value="1" title="Filter Green Comments" onclick="handleColorFilterClick(this, 1)"></span>
+            <span class="color-filter-circle filter-yellow" data-color-value="2" title="Filter Yellow Comments" onclick="handleColorFilterClick(this, 2)"></span>
+            <span class="color-filter-circle filter-red" data-color-value="3" title="Filter Red Comments" onclick="handleColorFilterClick(this, 3)"></span>
+        </div>
+
+        <hr> <!-- Removed style from here, added to CSS block -->
+        <div id="comments-display"></div>
+
     </div>
+    <!-- END: Added Page Wrapper -->
 
-    <div id="date-controls">
-        <span class="arrow" onclick="changeDate(-1)"><</span>
-        <span id="current-weekday" style="vertical-align: middle;"></span>
-        <span id="date-display">Loading Date...</span>
-        <span class="arrow" onclick="changeDate(1)">></span>
-    </div>
-
-    <div id="group-counts">Initializing...</div>
-
-    <div id="color-filters">
-        <span class="color-filter-circle filter-green" data-color-value="1" title="Filter Green Comments" onclick="handleColorFilterClick(this, 1)"></span>
-        <span class="color-filter-circle filter-yellow" data-color-value="2" title="Filter Yellow Comments" onclick="handleColorFilterClick(this, 2)"></span>
-        <span class="color-filter-circle filter-red" data-color-value="3" title="Filter Red Comments" onclick="handleColorFilterClick(this, 3)"></span>
-    </div>
-
-    <hr style="margin: 20px 0;"> <!-- Adjusted margin for HR -->
-    <div id="comments-display"></div>
 
     <!-- SCRIPT SECTION -->
 
