@@ -8,11 +8,11 @@
     <style>
       /* CSS - Includes latest layout and font size adjustments */
       body {
-            font-family: sans-serif; /* Consider fonts known for good emoji support if issues arise */
+            font-family: sans-serif;
             text-align: center;
             margin: 0;
-            padding-top: 60px; /* Increased slightly for potentially taller emoji */
-            font-size: 2em; /* Base font size */
+            padding-top: 60px;
+            font-size: 2em;
             position: relative;
             min-height: 100vh;
         }
@@ -25,57 +25,30 @@
           cursor: pointer;
           z-index: 100;
       }
-      /* Style the SPAN holding the emoji flag */
       #lang-flag {
-          display: inline-block; /* Allows setting size/spacing if needed */
-          font-size: 2.2em;   /* Adjust size of the emoji flag */
-          line-height: 1;     /* Prevent extra spacing */
-          /* Remove img-specific styles like border */
+          display: inline-block;
+          font-size: 2.2em; /* Adjust size of the emoji flag */
+          line-height: 1;
+          user-select: none; /* Prevent accidental text selection of the flag */
       }
 
       /* --- Date Controls --- */
       #date-controls {
-            margin-bottom: 20px;
-            padding: 10px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 60px;
+            margin-bottom: 20px; padding: 10px; display: flex;
+            justify-content: center; align-items: center; min-height: 60px;
         }
-
-      /* Original span - Hidden by Flatpickr */
        #date-display.flatpickr-input { display: none !important; }
-
-      /* Style the VISIBLE INPUT created by Flatpickr */
       #date-controls input.flatpickr-input {
-            font-family: inherit !important;
-            font-size: 1.5em !important;
-            color: inherit !important;
-            background: none !important;
-            border: none !important;
-            border-bottom: 1px dashed #ccc !important;
-            padding: 5px 8px !important;
-            margin: 0 20px !important;
-            box-shadow: none !important;
-            outline: none !important;
-            text-align: center !important;
-            cursor: pointer !important;
-            display: inline-block !important;
-            line-height: normal !important;
-            box-sizing: content-box !important;
-            height: auto !important;
-            width: auto !important;
-            min-width: 350px;
-            white-space: nowrap;
-            vertical-align: middle;
+            font-family: inherit !important; font-size: 1.5em !important; color: inherit !important;
+            background: none !important; border: none !important; border-bottom: 1px dashed #ccc !important;
+            padding: 5px 8px !important; margin: 0 20px !important; box-shadow: none !important;
+            outline: none !important; text-align: center !important; cursor: pointer !important;
+            display: inline-block !important; line-height: normal !important; box-sizing: content-box !important;
+            height: auto !important; width: auto !important; min-width: 350px;
+            white-space: nowrap; vertical-align: middle;
       }
-
       .arrow {
-          cursor: pointer;
-          font-size: 1.5em;
-          padding: 5px;
-          flex-shrink: 0;
-          vertical-align: middle;
+          cursor: pointer; font-size: 1.5em; padding: 5px; flex-shrink: 0; vertical-align: middle;
       }
 
       /* --- Color Filter Circles --- */
@@ -87,13 +60,10 @@
           transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.2s ease;
           vertical-align: middle;
       }
-      /* Identifier classes */
       .color-filter-circle.filter-green {}
       .color-filter-circle.filter-yellow {}
       .color-filter-circle.filter-red {}
-      /* Hover effect */
       .color-filter-circle:hover { border-color: #aaaaaa; }
-      /* Active state */
       .color-filter-circle.active { border-color: #333333; }
       .color-filter-circle.active.filter-green { background-color: green; }
       .color-filter-circle.active.filter-yellow { background-color: yellow; }
@@ -159,37 +129,46 @@
         const buttonNumbers = [1, 2, 3];
 
         // --- Language State ---
-        let currentLanguage = 'en';
-        const commentColumnIndices = { 'en': 4, 'ka': 5 }; // E=4, F=5. Verify!
+        let currentLanguage = 'en'; // Start with English (UK)
+        // **IMPORTANT**: Verify these column indices match your sheet!
+        // 0=A, 1=B, 2=C, 3=D (German), 4=E (English), 5=F (Georgian)
+        const commentColumnIndices = {
+            'en': 4, // English: Column E
+            'ka': 5, // Georgian: Column F
+            'de': 3  // German: Column D
+        };
+        // --- flagData now defines the 3-step cycle ---
+        // The flag shown indicates the language you WILL switch TO if clicked.
         const flagData = {
-            // Data for the flag emoji to show when the *current* language is the key
-             'en': {
-                flagToShow: '🇬🇪', // Georgian Flag Emoji
+            'en': { // Currently English
+                flagToShow: '🇬🇪', // Show Georgian flag
                 titleToShow: 'Switch to Georgian',
-                nextLang: 'ka'
+                nextLang: 'ka'    // Next language is Georgian
             },
-            'ka': {
-                flagToShow: '🇬🇧', // UK Flag Emoji
+            'ka': { // Currently Georgian
+                flagToShow: '🇩🇪', // Show German flag
+                titleToShow: 'Switch to German',
+                nextLang: 'de'    // Next language is German
+            },
+            'de': { // Currently German
+                flagToShow: '🇬🇧', // Show UK flag
                 titleToShow: 'Switch to English',
-                nextLang: 'en'
+                nextLang: 'en'    // Next language is English (completes cycle)
             }
         };
 
         // --- Helper Functions ---
         function formatDate(date) { /* ... no change ... */
-          const day = String(date.getDate()).padStart(2, '0');
-          const month = String(date.getMonth() + 1).padStart(2, '0');
-          const year = String(date.getFullYear()).slice(2);
-          return `${day}/${month}/${year}`;
+          const day = String(date.getDate()).padStart(2, '0'); const month = String(date.getMonth() + 1).padStart(2, '0'); const year = String(date.getFullYear()).slice(2); return `${day}/${month}/${year}`;
         }
         function calculateGlobalMax(allData) { /* ... no change ... */
-            const dailyGroupTotals = {}; let maxFound = 0; if (allData && allData.length > 1) { for (let i = 1; i < allData.length; i++) { const row = allData[i]; if (!row || row.length < 2 || !row[0] || !row[1]) continue; const timestamp = row[0]; const group = row[1]; let datePart = ''; if (typeof timestamp === 'string') { const match = timestamp.match(/^(\d{1,2}\/\d{1,2}\/\d{2,4})/); if (match) { const dateParts = match[1].split('/'); if (dateParts.length === 3) { const day = String(dateParts[0]).padStart(2,'0'); const month = String(dateParts[1]).padStart(2,'0'); const year = dateParts[2].length === 4 ? dateParts[2].slice(2) : String(dateParts[2]).padStart(2,'0'); datePart = `${day}/${month}/${year}`; } else continue; } else continue; } else continue; if (!dailyGroupTotals[datePart]) dailyGroupTotals[datePart] = {}; if (!dailyGroupTotals[datePart][group]) dailyGroupTotals[datePart][group] = 0; dailyGroupTotals[datePart][group]++; if (dailyGroupTotals[datePart][group] > maxFound) maxFound = dailyGroupTotals[datePart][group]; } } console.log("Global Max Daily Group Count Calculated:", maxFound); return maxFound;
+            const dailyGroupTotals = {}; let maxFound = 0; if (allData && allData.length > 1) { for (let i = 1; i < allData.length; i++) { const row = allData[i]; if (!row || row.length < 2 || !row[0] || !row[1]) continue; const timestamp = row[0]; const group = row[1]; let datePart = ''; if (typeof timestamp === 'string') { const match = timestamp.match(/^(\d{1,2}\/\d{1,2}\/\d{2,4})/); if (match) { const dateParts = match[1].split('/'); if (dateParts.length === 3) { const day = String(dateParts[0]).padStart(2,'0'); const month = String(dateParts[1]).padStart(2,'0'); const year = dateParts[2].length === 4 ? dateParts[2].slice(2) : String(dateParts[2]).padStart(2,'0'); datePart = `${day}/${month}/${year}`; } else continue; } else continue; } else continue; if (!dailyGroupTotals[datePart]) dailyGroupTotals[datePart] = {}; if (!dailyGroupTotals[datePart][group]) dailyGroupTotals[datePart][group] = 0; dailyGroupTotals[datePart][group]++; if (dailyGroupTotals[datePart][group] > maxFound) maxFound = dailyGroupTotals[datePart][group]; } } console.log("Global Max Daily Group Count:", maxFound); return maxFound;
         }
         function updateStatus(message, isError = false) { /* ... no change ... */
            console[isError ? 'error' : 'log']("Status:", message); const groupCountsContainer = document.getElementById('group-counts'); if (groupCountsContainer) groupCountsContainer.textContent = message; if (isError) { console.warn("Error occurred, state:", message); }
         }
         function setDateDisplay() { /* ... no change ... */
-          try { if (calendarInstance) { calendarInstance.setDate(currentDate, false); console.log("setDateDisplay updated calendar instance to:", currentDate); } else { console.warn("Calendar instance not ready for setDateDisplay."); } } catch (error) { console.error("Error setting date display:", error); updateStatus("Date display update error.", true); }
+          try { if (calendarInstance) { calendarInstance.setDate(currentDate, false); console.log("Set date display:", currentDate); } else { console.warn("Calendar not ready for setDateDisplay."); } } catch (error) { console.error("Error setting date display:", error); updateStatus("Date display update error.", true); }
         }
 
         // --- GAPI Initialization Flow ---
@@ -213,29 +192,79 @@
       }
 
       // --- Data Display (Handles Language) ---
-       function displayGroupCounts() { /* ... no change in logic, still uses commentIndex ... */
+       function displayGroupCounts() {
             if (!gapiInitialized) { updateStatus("Error: Cannot display counts, GAPI not initialized.", true); return; }
             const formattedDate = formatDate(currentDate);
-            const range = `${SHEET_NAME}!A:F`; // Adjust if Georgian column is different
+            // --- UPDATED RANGE: Ensure columns A through F are fetched ---
+            const range = `${SHEET_NAME}!A:F`; // Covers D, E, F
             const groupCountsContainer = document.getElementById('group-counts');
             const commentsContainer = document.getElementById('comments-display');
             if (!groupCountsContainer || !commentsContainer) { console.error("Display containers not found!"); return; }
             groupCountsContainer.innerHTML = "Loading day data..."; commentsContainer.innerHTML = "";
             currentDayCommentsData = {};
-            const commentIndex = commentColumnIndices[currentLanguage]; // Get correct index
+
+            // --- Get correct comment column index based on current language ---
+            const commentIndex = commentColumnIndices[currentLanguage];
+            if (typeof commentIndex === 'undefined') {
+                console.error(`Invalid language code '${currentLanguage}' or missing index mapping.`);
+                updateStatus(`Internal Error: Invalid language setup.`, true);
+                return; // Prevent fetch with invalid index
+            }
             console.log(`Fetching ${range} for ${formattedDate}, lang: ${currentLanguage} (comment index: ${commentIndex})`);
-            try { gapi.client.sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: range, dateTimeRenderOption: 'FORMATTED_STRING', valueRenderOption: 'FORMATTED_VALUE' }).then(response => { console.log(`Successfully fetched ${range} data.`); groupCountsContainer.innerHTML = ""; const data = response.result.values; const groupButtonCounts = {}; const groupTotals = {}; currentDayCommentsData = {}; let foundDataForDate = false; if (data && data.length > 1) { for (let i = 1; i < data.length; i++) { const row = data[i]; if (!row || row.length < 3 || !row[0] || !row[1] || !row[2]) continue; const timestamp = row[0]; const group = String(row[1]).trim(); const button = parseInt(row[2]); const comment = (row.length > commentIndex && row[commentIndex]) ? String(row[commentIndex]).trim() : null; let rowDatePart = ''; if (typeof timestamp === 'string') { const match = timestamp.match(/^(\d{1,2}\/\d{1,2}\/\d{2,4})/); if (match) { const dateParts = match[1].split('/'); if (dateParts.length === 3) { const day = String(dateParts[0]).padStart(2,'0'); const month = String(dateParts[1]).padStart(2,'0'); const year = dateParts[2].length === 4 ? dateParts[2].slice(2) : String(dateParts[2]).padStart(2,'0'); rowDatePart = `${day}/${month}/${year}`; } else continue; } else continue; } else continue; if (rowDatePart === formattedDate && group && groupOrder.includes(group) && !isNaN(button) && buttonNumbers.includes(button)) { foundDataForDate = true; if (!groupButtonCounts[group]) groupButtonCounts[group] = {}; groupButtonCounts[group][button] = (groupButtonCounts[group][button] || 0) + 1; groupTotals[group] = (groupTotals[group] || 0) + 1; if (comment && comment.length > 0) { if (!currentDayCommentsData[group]) currentDayCommentsData[group] = []; currentDayCommentsData[group].push({ text: comment, color: button }); } } } } else { console.log("No data rows returned."); } groupOrder.forEach(group => { const totalCountForDay = groupTotals[group] || 0; const groupCountDiv = document.createElement('div'); groupCountDiv.className = 'group-count'; const groupNameSpan = document.createElement('span'); groupNameSpan.className = 'group-name'; groupNameSpan.textContent = `${group}:`; groupCountDiv.appendChild(groupNameSpan); const barChartDiv = document.createElement('div'); barChartDiv.className = 'bar-chart'; if (totalCountForDay > 0 && globalMaxDailyGroupCount > 0) { buttonNumbers.forEach(button => { const buttonCountForDay = groupButtonCounts[group]?.[button] || 0; const percentage = globalMaxDailyGroupCount > 0 ? (buttonCountForDay / globalMaxDailyGroupCount) * 100 : 0; if (percentage > 0) { const barDiv = document.createElement('div'); barDiv.className = `bar button-${button}`; barDiv.style.width = `${percentage}%`; barDiv.title = `Button ${button}: ${buttonCountForDay}`; barChartDiv.appendChild(barDiv); } }); } groupCountDiv.appendChild(barChartDiv); const totalCountSpan = document.createElement('span'); totalCountSpan.className = 'group-total'; totalCountSpan.textContent = `(${totalCountForDay})`; groupCountDiv.appendChild(totalCountSpan); groupCountsContainer.appendChild(groupCountDiv); }); if (!foundDataForDate && groupCountsContainer.innerHTML === "") { groupCountsContainer.textContent = "No data found for this date."; } renderComments(); }).catch(err => { console.error(`Error fetching/processing data for ${formattedDate}:`, err); let errorMsg = err.result?.error?.message || err.message || 'Unknown error'; updateStatus(`Error displaying data: ${errorMsg}`, true); groupCountsContainer.innerHTML = `Error loading data.`; commentsContainer.innerHTML = ""; currentDayCommentsData = {}; }); } catch (error) { console.error(`Sync error in displayGroupCounts for ${formattedDate}:`, error); updateStatus(`Code error displaying data: ${error.message}`, true); }
+
+            try {
+                gapi.client.sheets.spreadsheets.values.get({
+                    spreadsheetId: SPREADSHEET_ID,
+                    range: range, // Fetch A:F
+                    dateTimeRenderOption: 'FORMATTED_STRING',
+                    valueRenderOption: 'FORMATTED_VALUE'
+                }).then(response => {
+                    console.log(`Successfully fetched ${range} data.`); groupCountsContainer.innerHTML = ""; const data = response.result.values; const groupButtonCounts = {}; const groupTotals = {}; currentDayCommentsData = {}; let foundDataForDate = false;
+                    if (data && data.length > 1) {
+                         for (let i = 1; i < data.length; i++) {
+                             const row = data[i];
+                             // Ensure basic columns + the required comment column exist
+                             if (!row || row.length <= Math.max(3, commentIndex) || !row[0] || !row[1] || !row[2]) continue;
+
+                             const timestamp = row[0]; const group = String(row[1]).trim(); const button = parseInt(row[2]);
+                             // Extract comment using the correct index for the current language
+                             const comment = (row[commentIndex]) ? String(row[commentIndex]).trim() : null;
+
+                             let rowDatePart = ''; // Date parsing logic remains the same
+                             if (typeof timestamp === 'string') { const match = timestamp.match(/^(\d{1,2}\/\d{1,2}\/\d{2,4})/); if (match) { const dateParts = match[1].split('/'); if (dateParts.length === 3) { const day = String(dateParts[0]).padStart(2,'0'); const month = String(dateParts[1]).padStart(2,'0'); const year = dateParts[2].length === 4 ? dateParts[2].slice(2) : String(dateParts[2]).padStart(2,'0'); rowDatePart = `${day}/${month}/${year}`; } else continue; } else continue; } else continue;
+
+                             if (rowDatePart === formattedDate && group && groupOrder.includes(group) && !isNaN(button) && buttonNumbers.includes(button)) {
+                                 foundDataForDate = true;
+                                 // Aggregate counts (remains the same)
+                                 if (!groupButtonCounts[group]) groupButtonCounts[group] = {}; groupButtonCounts[group][button] = (groupButtonCounts[group][button] || 0) + 1; groupTotals[group] = (groupTotals[group] || 0) + 1;
+                                 // Store comment (from the correct language column)
+                                 if (comment && comment.length > 0) { if (!currentDayCommentsData[group]) currentDayCommentsData[group] = []; currentDayCommentsData[group].push({ text: comment, color: button }); }
+                             }
+                         }
+                     } else { console.log("No data rows returned."); }
+                     // Render Group Counts/Bars (remains the same)
+                     groupOrder.forEach(group => { const totalCountForDay = groupTotals[group] || 0; const groupCountDiv = document.createElement('div'); groupCountDiv.className = 'group-count'; const groupNameSpan = document.createElement('span'); groupNameSpan.className = 'group-name'; groupNameSpan.textContent = `${group}:`; groupCountDiv.appendChild(groupNameSpan); const barChartDiv = document.createElement('div'); barChartDiv.className = 'bar-chart'; if (totalCountForDay > 0 && globalMaxDailyGroupCount > 0) { buttonNumbers.forEach(button => { const buttonCountForDay = groupButtonCounts[group]?.[button] || 0; const percentage = globalMaxDailyGroupCount > 0 ? (buttonCountForDay / globalMaxDailyGroupCount) * 100 : 0; if (percentage > 0) { const barDiv = document.createElement('div'); barDiv.className = `bar button-${button}`; barDiv.style.width = `${percentage}%`; barDiv.title = `Button ${button}: ${buttonCountForDay}`; barChartDiv.appendChild(barDiv); } }); } groupCountDiv.appendChild(barChartDiv); const totalCountSpan = document.createElement('span'); totalCountSpan.className = 'group-total'; totalCountSpan.textContent = `(${totalCountForDay})`; groupCountDiv.appendChild(totalCountSpan); groupCountsContainer.appendChild(groupCountDiv); });
+                     if (!foundDataForDate && groupCountsContainer.innerHTML === "") { groupCountsContainer.textContent = "No data found for this date."; }
+                     // Render comments using the data just processed
+                     renderComments();
+                 }).catch(err => {
+                     console.error(`Error fetching/processing data for ${formattedDate}:`, err); let errorMsg = err.result?.error?.message || err.message || 'Unknown error'; updateStatus(`Error displaying data: ${errorMsg}`, true); groupCountsContainer.innerHTML = `Error loading data.`; commentsContainer.innerHTML = ""; currentDayCommentsData = {};
+                 });
+            } catch (error) {
+                 console.error(`Sync error in displayGroupCounts for ${formattedDate}:`, error); updateStatus(`Code error displaying data: ${error.message}`, true);
+             }
        }
-       function renderComments() { /* ... no change ... */
+
+       function renderComments() { /* ... no change needed ... */
             const commentsContainer = document.getElementById('comments-display'); if (!commentsContainer) return; commentsContainer.innerHTML = ""; let commentsFoundForFilter = false; groupOrder.forEach(group => { const commentsForGroup = currentDayCommentsData[group] || []; const filteredComments = commentsForGroup.filter(comment => activeColorFilter === null || comment.color === activeColorFilter); if (filteredComments.length > 0) { commentsFoundForFilter = true; const commentBlock = document.createElement('div'); commentBlock.style.marginBottom = '15px'; const nameLabel = document.createElement('strong'); nameLabel.textContent = `${group}: `; commentBlock.appendChild(nameLabel); commentBlock.appendChild(document.createTextNode(filteredComments.map(c => c.text).join(' | '))); commentsContainer.appendChild(commentBlock); } }); if (!commentsFoundForFilter) { if (Object.keys(currentDayCommentsData).length === 0 && document.getElementById('group-counts')?.textContent !== "No data found for this date."){ commentsContainer.textContent = "No comments entered for this date."; } else if (activeColorFilter !== null) { const colors = { 1: 'green', 2: 'yellow', 3: 'red' }; commentsContainer.textContent = `No ${colors[activeColorFilter] || ''} comments for this date.`; } else if (Object.keys(currentDayCommentsData).length > 0) { commentsContainer.textContent = "No comments entered for this date."; } else { commentsContainer.innerHTML = ""; } }
        }
 
-        // --- Language Switching (Using Emoji) ---
+        // --- Language Switching (Handles 3-way Cycle) ---
         function setInitialFlag() {
-            const flagElement = document.getElementById('lang-flag'); // Target the span
+            const flagElement = document.getElementById('lang-flag');
             if (flagElement) {
-                const initialFlagInfo = flagData[currentLanguage];
-                flagElement.textContent = initialFlagInfo.flagToShow; // Set emoji as text content
+                const initialFlagInfo = flagData[currentLanguage]; // Uses 'en' initially
+                flagElement.textContent = initialFlagInfo.flagToShow; // Shows 🇬🇪
                 flagElement.title = initialFlagInfo.titleToShow;
                 console.log(`Initial flag set for language: ${currentLanguage}`);
             } else {
@@ -244,17 +273,21 @@
         }
 
         function toggleLanguage() {
-            currentLanguage = flagData[currentLanguage].nextLang; // Switch language state
+            // 1. Determine the next language using the current language's flagData entry
+            const nextLangCode = flagData[currentLanguage].nextLang;
+            currentLanguage = nextLangCode; // 2. Update the current language state
+
             console.log("Switching language to:", currentLanguage);
 
-            const flagElement = document.getElementById('lang-flag'); // Target the span
+            const flagElement = document.getElementById('lang-flag');
             if (flagElement) {
+                // 3. Get the display info for the *new* current language
                 const newFlagInfo = flagData[currentLanguage];
-                flagElement.textContent = newFlagInfo.flagToShow; // Set new emoji text content
-                flagElement.title = newFlagInfo.titleToShow;
+                flagElement.textContent = newFlagInfo.flagToShow; // Update emoji
+                flagElement.title = newFlagInfo.titleToShow;      // Update title
             }
 
-            // Re-fetch and display data with the new language preference
+            // 4. Re-fetch and display data with the new language preference
             if (gapiInitialized) {
                 const groupCountsContainer = document.getElementById('group-counts');
                 const commentsContainer = document.getElementById('comments-display');
