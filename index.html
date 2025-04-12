@@ -1,224 +1,26 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Feedback Dashboard</title>
-    <!-- Add flatpickr CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <style>
-      /* CSS - Includes latest layout and font size adjustments */
-      body {
-            font-family: sans-serif;
-            text-align: center;
-            margin: 0;
-            font-size: 2em; /* Base font size */
-        }
-      #date-controls {
-            margin-bottom: 20px;
-            padding: 30px 10px 15px 10px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            /* Add relative positioning if needed for absolute positioning inside */
-            position: relative;
-            min-height: 60px; /* Ensure enough height for the input */
-        }
-
-      /* Original span - It SHOULD be hidden by Flatpickr, but let's force it */
-      /* This rule targets the original span AFTER flatpickr adds its class */
-       #date-display.flatpickr-input {
-           display: none !important; /* Hide the original span if it's still somehow visible */
-       }
-       /* If the above doesn't work, maybe Flatpickr puts the altInput *next* to it */
-       /* You could try hiding the span if a flatpickr alt input is its sibling */
-       /* #date-display + input.flatpickr-input { display: none; } */ /* Less ideal */
-
-
-      /* --- Style the VISIBLE INPUT created by Flatpickr --- */
-      #date-controls input.flatpickr-input { /* More specific selector */
-            font-family: inherit !important;
-            font-size: 1.5em !important;
-            color: inherit !important;
-            background: none !important;
-            border: none !important;
-            border-bottom: 1px dashed #ccc !important;
-            padding: 5px 8px !important;
-            margin: 0 20px !important; /* Space between arrows and input */
-            box-shadow: none !important;
-            outline: none !important;
-            text-align: center !important;
-            cursor: pointer !important;
-            display: inline-block !important;
-            line-height: normal !important;
-            box-sizing: content-box !important;
-            height: auto !important;
-            width: auto !important;
-            min-width: 300px;
-            white-space: nowrap;
-            vertical-align: middle;
-      }
-
-      .arrow {
-          cursor: pointer;
-          font-size: 1.5em;
-          padding: 5px;
-          flex-shrink: 0;
-          vertical-align: middle;
-      }
-
-      /* --- Color Filter Circle Adjustments --- */
-      #color-filters { margin-top: 25px; margin-bottom: 15px; text-align: center; }
-      .color-filter-circle {
-          display: inline-block;
-          width: 40px;
-          height: 40px;
-          border-radius: 50%;
-          margin: 0 15px;
-          cursor: pointer;
-          border: 2px solid transparent;
-          /* Default state: grey background */
-          background-color: #cccccc;
-          transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.2s ease;
-          vertical-align: middle;
-      }
-      /* Identifier classes - NO background color here */
-      .color-filter-circle.filter-green { /* No background */ }
-      .color-filter-circle.filter-yellow { /* No background */ }
-      .color-filter-circle.filter-red { /* No background */ }
-
-      /* Hover effect */
-      .color-filter-circle:hover {
-          border-color: #aaaaaa;
-      }
-
-      /* --- Active state: Apply color AND border --- */
-      .color-filter-circle.active {
-           /* Common active style, like the border */
-           border-color: #333333; /* Darker border when active */
-      }
-      /* Combine .active with the filter class to set the COLOR */
-      .color-filter-circle.active.filter-green {
-          background-color: green;
-      }
-      .color-filter-circle.active.filter-yellow {
-          background-color: yellow;
-      }
-      .color-filter-circle.active.filter-red {
-          background-color: red;
-      }
-
-
-      /* Rest of the CSS remains the same */
-      #group-counts { margin-top: 20px; text-align: left; width: 100%; padding: 0 10px; box-sizing: border-box; min-height: 50px; vertical-align: top; display: flex; flex-direction: column; align-items: stretch; }
-      #comments-display { text-align: left; margin-top: 20px; width: 100%; padding: 0 10px; box-sizing: border-box; font-size: 1.5em; }
-      .group-count { margin-bottom: 10px; display: flex; align-items: center; }
-      .group-name { white-space: nowrap; width: 120px; text-align: left; flex-shrink: 0; margin-right: 60px; }
-      .bar-chart { display: flex; width: 100%; height: 20px; border: 1px solid #eee; overflow: hidden; }
-      .bar { height: 100%; }
-      .button-1 { background-color: green; }
-      .button-2 { background-color: yellow; }
-      .button-3 { background-color: red; }
-      .group-total { font-size: 0.9em; margin-left: 20px; white-space: nowrap; }
-    </style>
-</head>
-<body>
-
-    <div id="date-controls">
-        <span class="arrow" onclick="changeDate(-1)"><</span>
-        <!-- This span SHOULD be hidden by flatpickr via altInput:true -->
-        <!-- The CSS rule #date-display.flatpickr-input { display: none; } provides backup -->
-        <span id="date-display">Loading Date...</span>
-        <!-- Flatpickr inserts its styled input here -->
-        <span class="arrow" onclick="changeDate(1)">></span>
-    </div>
-
-    <div id="group-counts">Initializing...</div>
-
-    <div id="color-filters">
-        <span class="color-filter-circle filter-green" data-color-value="1" title="Filter Green Comments" onclick="handleColorFilterClick(this, 1)"></span>
-        <span class="color-filter-circle filter-yellow" data-color-value="2" title="Filter Yellow Comments" onclick="handleColorFilterClick(this, 2)"></span>
-        <span class="color-filter-circle filter-red" data-color-value="3" title="Filter Red Comments" onclick="handleColorFilterClick(this, 3)"></span>
-    </div>
-
-    <hr style="margin: 0 0 20px 0;">
-    <div id="comments-display"></div>
-
-    <!-- Load GAPI library -->
-    <script async defer src="https://apis.google.com/js/api.js" onload="gisLoaded()"></script>
-    <!-- Load flatpickr library -->
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-
-    <script>
-        // --- Helper Functions ---
-        function formatDate(date) { /* ... no change ... */
-          const day = String(date.getDate()).padStart(2, '0');
-          const month = String(date.getMonth() + 1).padStart(2, '0');
-          const year = String(date.getFullYear()).slice(2);
-          return `${day}/${month}/${year}`;
-        }
-
-        function calculateGlobalMax(allData) { /* ... no change ... */
-            const dailyGroupTotals = {}; let maxFound = 0; if (allData && allData.length > 1) { for (let i = 1; i < allData.length; i++) { const row = allData[i]; if (!row || row.length < 2 || !row[0] || !row[1]) continue; const timestamp = row[0]; const group = row[1]; let datePart = ''; if (typeof timestamp === 'string') { const match = timestamp.match(/^(\d{1,2}\/\d{1,2}\/\d{2,4})/); if (match) { const dateParts = match[1].split('/'); if (dateParts.length === 3) { const day = String(dateParts[0]).padStart(2,'0'); const month = String(dateParts[1]).padStart(2,'0'); const year = dateParts[2].length === 4 ? dateParts[2].slice(2) : String(dateParts[2]).padStart(2,'0'); datePart = `${day}/${month}/${year}`; } else continue; } else continue; } else continue; if (!dailyGroupTotals[datePart]) dailyGroupTotals[datePart] = {}; if (!dailyGroupTotals[datePart][group]) dailyGroupTotals[datePart][group] = 0; dailyGroupTotals[datePart][group]++; if (dailyGroupTotals[datePart][group] > maxFound) maxFound = dailyGroupTotals[datePart][group]; } } console.log("Global Max Daily Group Count Calculated:", maxFound); return maxFound;
-        }
-
-       function updateStatus(message, isError = false) { /* ... no change ... */
-           console[isError ? 'error' : 'log']("Status:", message); const groupCountsContainer = document.getElementById('group-counts'); const commentsContainer = document.getElementById('comments-display'); const dateDisplay = document.getElementById('date-display'); if (groupCountsContainer) groupCountsContainer.textContent = message; if (isError) { console.warn("Error occurred, state:", message); }
-       }
-
-        function setDateDisplay() { /* ... no change ... */
-          try {
-            if (calendarInstance) {
-                calendarInstance.setDate(currentDate, false); // Update calendar, don't trigger onChange
-                console.log("setDateDisplay updated calendar instance to:", currentDate);
-            } else {
-                console.warn("Calendar instance not ready for setDateDisplay.");
-            }
-        } catch (error) {
-            console.error("Error setting date display:", error);
-            updateStatus("Date display update error.", true);
-        }
-        }
-      // --- Constants ---
-      const SPREADSHEET_ID = '1DIKTyqRujOEF6TbfhxF5UvZvu1O81o0gtF_5DANYbJQ';
-      const SHEET_NAME = 'Sheet1';
-      const API_KEY = 'AIzaSyDG2mNypu1h7Zl2eQhK2IFBDIBgLvYX1Pk';
-
-      // --- State Variables ---
-      let currentDate = new Date();
-      let globalMaxDailyGroupCount = 0;
-      let gapiInitialized = false;
-      let calendarInstance = null;
-      let activeColorFilter = null;
-      let currentDayCommentsData = {};
-      const groupOrder = ["Besucher", "Lehrer", "9-12 Klasse", "5-8 Klasse", "1-4 Klasse"];
-      const buttonNumbers = [1, 2, 3];
-
-      // --- GAPI Initialization Flow ---
-      function gisLoaded() { /* ... no change ... */
-         console.log("GAPI script loaded (gisLoaded called). Loading 'client:auth2' modules..."); updateStatus("Loading API modules..."); gapi.load('client:auth2', initializeGapiClient);
-      }
-
-      function initializeGapiClient() { /* ... no change ... */
-           console.log("'client:auth2' modules loaded. Initializing GAPI client..."); updateStatus("Initializing API client..."); try { gapi.client.init({ apiKey: API_KEY, discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4'], }).then(() => { console.log("gapi.client.init resolved."); if (gapi.client.sheets && gapi.client.sheets.spreadsheets) { console.log("Sheets API client available."); gapiInitialized = true; initializeCalendar(); setDateDisplay(); updateStatus("Fetching data to calculate scale..."); fetchDataForScaleCalculation(); } else { console.error("gapi.client.init succeeded BUT gapi.client.sheets is NOT available!"); updateStatus("Error: Sheets API structure not found.", true); gapiInitialized = false; } }).catch(err => { console.error("Error during gapi.client.init promise:", err); handleInitError(err); gapiInitialized = false; }); console.log("gapi.client.init call issued (asynchronously)."); } catch (error) { console.error("Synchronous error during gapi.client.init setup:", error); updateStatus(`Initialization Code Error: ${error.message}`, true); gapiInitialized = false; }
-       }
-
        // Initialize Flatpickr
-       function initializeCalendar() { /* ... no change ... */
+       function initializeCalendar() {
            const dateDisplayElement = document.getElementById('date-display');
            if (dateDisplayElement && !calendarInstance) {
                console.log("Initializing Flatpickr on #date-display...");
                calendarInstance = flatpickr(dateDisplayElement, {
-                   altInput: true,
-                   altFormat: "l, d/m/y",
-                   dateFormat: "Y-m-d",
+                   // --- Use Alternate Input for Display ---
+                   altInput: true, // Create a separate visible input
+                   // CORRECTED FORMAT: Use uppercase 'Y' for 4-digit year
+                   altFormat: "l, d/m/Y", // Format for the VISIBLE input (Weekday, DD/MM/YYYY)
+                   dateFormat: "Y-m-d",   // Format for the HIDDEN input (internal value)
+
                    defaultDate: currentDate,
-                   allowInput: false,
+                   allowInput: false, // Don't allow typing into the visible input
                    onChange: function(selectedDates, dateStr, instance) {
                        if (selectedDates.length > 0) {
+                           // dateStr here is based on dateFormat (Y-m-d), NOT altFormat
                            console.log("Calendar date selected (hidden value):", dateStr);
+                           // Compare using the actual Date objects or our consistent formatDate helper
                            if (formatDate(selectedDates[0]) !== formatDate(currentDate)) {
                                currentDate = selectedDates[0];
                                resetColorFilters();
-                               displayGroupCounts();
+                               displayGroupCounts(); // Fetch and display data for the new date
                            } else {
                                console.log("Date selected is the same as current date.");
                            }
@@ -226,13 +28,17 @@
                    },
                    onReady: function(selectedDates, dateStr, instance) {
                        console.log("Flatpickr ready.");
+                       // instance.input is the original element (#date-display)
+                       // instance.altInput is the visible input element Flatpickr created
                        console.log("Original input (should be hidden):", instance.input);
                        console.log("Alternate (visible) input:", instance.altInput);
-                       // Check if original input is hidden, log if not
                        if (instance.input && window.getComputedStyle(instance.input).display !== 'none') {
                            console.warn("Original #date-display element is still visible after Flatpickr init!");
-                           // Optional: Force hide again if the CSS rule failed
-                           // instance.input.style.display = 'none';
+                           // instance.input.style.display = 'none'; // You could force hide here if needed
+                       }
+                        // Log the initial formatted date displayed
+                       if(instance.altInput) {
+                           console.log("Flatpickr initial display value (altInput):", instance.altInput.value);
                        }
                    },
                    errorHandler: function(error) {
@@ -247,38 +53,3 @@
                console.log("Flatpickr already initialized.");
            }
        }
-
-      function handleInitError(err) { /* ... no change ... */
-          let errorMsg = err.result?.error?.message || err.message || 'Unknown init error'; console.error("Initialization Error Details:", err); updateStatus(`Initialization Error: ${errorMsg}`, true);
-      }
-
-      function fetchDataForScaleCalculation() { /* ... no change ... */
-          if (!gapiInitialized) { updateStatus("Error: Cannot fetch scale data, GAPI not initialized.", true); return; } console.log("Fetching A:B range for scale calculation..."); try { gapi.client.sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `${SHEET_NAME}!A:B`, dateTimeRenderOption: 'FORMATTED_STRING', valueRenderOption: 'FORMATTED_VALUE' }).then(response => { console.log("Successfully fetched A:B data."); const allData = response.result.values; globalMaxDailyGroupCount = calculateGlobalMax(allData); if (globalMaxDailyGroupCount <= 0) { console.warn("No data found or max count is zero."); updateStatus("No feedback data found in the sheet."); displayGroupCounts(); } else { console.log("Scale calculated. Displaying initial data."); displayGroupCounts(); } }).catch(err => { console.error("Error fetching A:B data:", err); let errorMsg = err.result?.error?.message || err.message || 'Unknown fetch error'; updateStatus(`Error fetching scale data: ${errorMsg}`, true); }); } catch (error) { console.error("Synchronous error calling sheets.spreadsheets.values.get for scale:", error); updateStatus(`Critical Error fetching scale data: ${error.message}`, true); }
-      }
-
-       function displayGroupCounts() { /* ... no change ... */
-            if (!gapiInitialized) { updateStatus("Error: Cannot display counts, GAPI not initialized.", true); return; } const formattedDate = formatDate(currentDate); const range = `${SHEET_NAME}!A:E`; const groupCountsContainer = document.getElementById('group-counts'); const commentsContainer = document.getElementById('comments-display'); if (!groupCountsContainer || !commentsContainer) { console.error("Display containers not found!"); updateStatus("Internal page error: display elements missing.", true); return; } groupCountsContainer.innerHTML = "Loading day data..."; commentsContainer.innerHTML = ""; currentDayCommentsData = {}; console.log(`Fetching ${range} range for date: ${formattedDate}...`); try { gapi.client.sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: range, dateTimeRenderOption: 'FORMATTED_STRING', valueRenderOption: 'FORMATTED_VALUE' }).then(response => { console.log(`Successfully fetched ${range} data for ${formattedDate}.`); groupCountsContainer.innerHTML = ""; const data = response.result.values; const groupButtonCounts = {}; const groupTotals = {}; currentDayCommentsData = {}; let foundDataForDate = false; if (data && data.length > 1) { for (let i = 1; i < data.length; i++) { const row = data[i]; if (!row || row.length < 3 || !row[0] || !row[1] || !row[2]) continue; const timestamp = row[0]; const group = String(row[1]).trim(); const button = parseInt(row[2]); const comment = (row.length > 4 && row[4]) ? String(row[4]).trim() : null; let rowDatePart = ''; if (typeof timestamp === 'string') { const match = timestamp.match(/^(\d{1,2}\/\d{1,2}\/\d{2,4})/); if (match) { const dateParts = match[1].split('/'); if (dateParts.length === 3) { const day = String(dateParts[0]).padStart(2,'0'); const month = String(dateParts[1]).padStart(2,'0'); const year = dateParts[2].length === 4 ? dateParts[2].slice(2) : String(dateParts[2]).padStart(2,'0'); rowDatePart = `${day}/${month}/${year}`; } else continue; } else continue; } else continue; if (rowDatePart === formattedDate && group && groupOrder.includes(group) && !isNaN(button) && buttonNumbers.includes(button)) { foundDataForDate = true; if (!groupButtonCounts[group]) groupButtonCounts[group] = {}; groupButtonCounts[group][button] = (groupButtonCounts[group][button] || 0) + 1; groupTotals[group] = (groupTotals[group] || 0) + 1; if (comment && comment.length > 0) { if (!currentDayCommentsData[group]) currentDayCommentsData[group] = []; currentDayCommentsData[group].push({ text: comment, color: button }); } } } } else { console.log("No data rows returned from the sheet."); } groupOrder.forEach(group => { const totalCountForDay = groupTotals[group] || 0; const groupCountDiv = document.createElement('div'); groupCountDiv.className = 'group-count'; const groupNameSpan = document.createElement('span'); groupNameSpan.className = 'group-name'; groupNameSpan.textContent = `${group}:`; groupCountDiv.appendChild(groupNameSpan); const barChartDiv = document.createElement('div'); barChartDiv.className = 'bar-chart'; if (totalCountForDay > 0 && globalMaxDailyGroupCount > 0) { buttonNumbers.forEach(button => { const buttonCountForDay = groupButtonCounts[group]?.[button] || 0; const percentage = globalMaxDailyGroupCount > 0 ? (buttonCountForDay / globalMaxDailyGroupCount) * 100 : 0; if (percentage > 0) { const barDiv = document.createElement('div'); barDiv.className = `bar button-${button}`; barDiv.style.width = `${percentage}%`; barDiv.title = `Button ${button}: ${buttonCountForDay}`; barChartDiv.appendChild(barDiv); } }); } groupCountDiv.appendChild(barChartDiv); const totalCountSpan = document.createElement('span'); totalCountSpan.className = 'group-total'; totalCountSpan.textContent = `(${totalCountForDay})`; groupCountDiv.appendChild(totalCountSpan); groupCountsContainer.appendChild(groupCountDiv); }); if (!foundDataForDate && groupCountsContainer.innerHTML === "") { groupCountsContainer.textContent = "No data found for this date."; } renderComments(); }).catch(err => { console.error(`Error fetching/processing data for ${formattedDate}:`, err); let errorMsg = err.result?.error?.message || err.message || 'Unknown error'; updateStatus(`Error displaying data: ${errorMsg}`, true); groupCountsContainer.innerHTML = `Error loading data for ${formattedDate}.`; commentsContainer.innerHTML = ""; currentDayCommentsData = {}; }); } catch (error) { console.error(`Synchronous error in displayGroupCounts for ${formattedDate}:`, error); updateStatus(`Code error displaying data: ${error.message}`, true); }
-       }
-
-       function renderComments() { /* ... no change ... */
-            const commentsContainer = document.getElementById('comments-display'); if (!commentsContainer) return; commentsContainer.innerHTML = ""; let commentsFoundForFilter = false; groupOrder.forEach(group => { const commentsForGroup = currentDayCommentsData[group] || []; const filteredComments = commentsForGroup.filter(comment => { return activeColorFilter === null || comment.color === activeColorFilter; }); if (filteredComments.length > 0) { commentsFoundForFilter = true; const commentBlock = document.createElement('div'); commentBlock.style.marginBottom = '15px'; const nameLabel = document.createElement('strong'); nameLabel.textContent = `${group}: `; commentBlock.appendChild(nameLabel); commentBlock.appendChild(document.createTextNode(filteredComments.map(c => c.text).join(' | '))); commentsContainer.appendChild(commentBlock); } }); if (!commentsFoundForFilter) { if (Object.keys(currentDayCommentsData).length === 0 && document.getElementById('group-counts')?.textContent !== "No data found for this date."){ commentsContainer.textContent = "No comments entered for this date."; } else if (activeColorFilter !== null) { const colors = { 1: 'green', 2: 'yellow', 3: 'red' }; commentsContainer.textContent = `No ${colors[activeColorFilter] || ''} comments for this date.`; } else if (Object.keys(currentDayCommentsData).length > 0) { commentsContainer.textContent = "No comments entered for this date."; } else { commentsContainer.innerHTML = ""; } }
-       }
-
-      function handleColorFilterClick(element, colorValue) { /* ... no change ... */
-          const circles = document.querySelectorAll('.color-filter-circle'); if (element.classList.contains('active')) { element.classList.remove('active'); activeColorFilter = null; } else { circles.forEach(circle => circle.classList.remove('active')); element.classList.add('active'); activeColorFilter = colorValue; } renderComments();
-      }
-
-      function resetColorFilters() { /* ... no change ... */
-          const circles = document.querySelectorAll('.color-filter-circle'); circles.forEach(circle => circle.classList.remove('active')); activeColorFilter = null;
-      }
-
-      function changeDate(delta) { /* ... no change ... */
-          const newDate = new Date(currentDate); newDate.setDate(newDate.getDate() + delta); currentDate = newDate; setDateDisplay(); const groupCountsContainer = document.getElementById('group-counts'); const commentsContainer = document.getElementById('comments-display'); if (groupCountsContainer) groupCountsContainer.innerHTML = "Loading..."; if (commentsContainer) commentsContainer.innerHTML = ""; resetColorFilters(); if (gapiInitialized) { displayGroupCounts(); } else { if (!groupCountsContainer?.textContent?.includes("Error")) { updateStatus("Cannot change date display: GAPI not initialized.", true); } else { setDateDisplay(); } }
-      }
-
-      // --- Initial Load Trigger ---
-      // gisLoaded() called by script tag onload
-
-    </script>
-</body>
-</html>
