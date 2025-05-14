@@ -295,14 +295,37 @@
                     const groupButtonCounts = {}; const groupTotals = {}; currentDayCommentsData = {}; let foundDataForDate = false;
                     if (data && data.length > 1) {
                          for (let i = 1; i < data.length; i++) {
-                             const row = data[i]; if (!row || row.length <= Math.max(2, commentIndex) || !row[0] || !row[1] || !row[2]) { continue; }
-                             const timestamp = row[0]; const group = String(row[1]).trim(); const button = parseInt(row[2], 10); const comment = (row[commentIndex]) ? String(row[commentIndex]).trim() : null;
+                             const row = data[i];
+                             // --- BUG FIX START ---
+                             // Old condition that skipped rows if they didn't have enough columns up to the commentIndex:
+                             // if (!row || row.length <= Math.max(2, commentIndex) || !row[0] || !row[1] || !row[2]) { continue; }
+                             // New condition: Only skip if essential data (Timestamp, Group, Button in cols A, B, C) is missing.
+                             if (!row || !row[0] || !row[1] || !row[2]) {
+                                 // Optional: console.warn(`Skipping row ${i+1} due to missing essential data (A, B, or C). Row:`, row);
+                                 continue;
+                             }
+                             // --- BUG FIX END ---
+
+                             const timestamp = row[0];
+                             const group = String(row[1]).trim();
+                             const button = parseInt(row[2], 10);
+                             // Safely get comment: if row[commentIndex] is out of bounds or empty, comment will be null.
+                             const comment = (row[commentIndex]) ? String(row[commentIndex]).trim() : null;
+
                              let rowDatePart = '';
                              if (typeof timestamp === 'string') { const match = timestamp.match(/^(\d{1,2}\/\d{1,2}\/\d{2,4})/); if (match) { const dateParts = match[1].split('/'); if (dateParts.length === 3) { const day = String(dateParts[0]).padStart(2,'0'); const month = String(dateParts[1]).padStart(2,'0'); const year = dateParts[2].length === 4 ? dateParts[2].slice(-2) : String(dateParts[2]).padStart(2,'0'); rowDatePart = `${day}/${month}/${year}`; } else continue; } else continue; } else continue;
+
                              if (rowDatePart === formattedDate && group && groupOrder.includes(group) && !isNaN(button) && buttonNumbers.includes(button)) {
                                  foundDataForDate = true;
-                                 if (!groupButtonCounts[group]) groupButtonCounts[group] = { 1: 0, 2: 0, 3: 0 }; groupButtonCounts[group][button]++; groupTotals[group] = (groupTotals[group] || 0) + 1;
-                                 if (comment && comment.length > 0) { if (!currentDayCommentsData[group]) currentDayCommentsData[group] = []; currentDayCommentsData[group].push({ text: comment, color: button }); }
+                                 if (!groupButtonCounts[group]) groupButtonCounts[group] = { 1: 0, 2: 0, 3: 0 };
+                                 groupButtonCounts[group][button]++;
+                                 groupTotals[group] = (groupTotals[group] || 0) + 1;
+
+                                 // Add comment to currentDayCommentsData only if it's valid and not empty string "null" or "undefined".
+                                 if (comment && comment.length > 0 && comment !== "null" && comment !== "undefined") {
+                                     if (!currentDayCommentsData[group]) currentDayCommentsData[group] = [];
+                                     currentDayCommentsData[group].push({ text: comment, color: button });
+                                 }
                              }
                          }
                      } else { console.log("No data rows returned from sheet or only header."); }
